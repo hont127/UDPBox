@@ -1,0 +1,49 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text;
+using Hont.UDPBoxPackage;
+using UnityEngine;
+
+namespace Hont.UDPBoxExtensions
+{
+    public class RTT_TestHandler : HandlerBase
+    {
+        RTT_TestPackage mTemplate;
+
+
+        public RTT_TestHandler()
+        {
+            mTemplate = new RTT_TestPackage(UDPBoxUtility.DefaultHeadBytes);
+        }
+
+        protected override short[] GetCacheProcessableID()
+        {
+            return new short[] { UDPBoxExtensionConsts.RTT };
+        }
+
+        public override void Process(UDPBox udpBox, byte[] packageBytes, IPEndPoint ipEndPoint)
+        {
+            mTemplate.Deserialize(packageBytes);
+
+            switch (mTemplate.Op)
+            {
+                case RTT_TestPackage.EOp.A:
+
+                    mTemplate.BTime = DateTime.Now.Ticks;
+                    mTemplate.Op = RTT_TestPackage.EOp.B;
+                    udpBox.SendMessage(mTemplate.Serialize(), ipEndPoint);
+
+                    break;
+                case RTT_TestPackage.EOp.B:
+
+                    Debug.Log("RTT: " + (mTemplate.BTime - mTemplate.ATime) / TimeSpan.TicksPerMillisecond + " ms");
+
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
