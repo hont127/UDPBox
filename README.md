@@ -1,5 +1,4 @@
 # UDPBox
-# UDPBox
 The simple LAN-Network unity3d game server
 
 1.Support for message compression (Ionic.Zip)
