@@ -23,6 +23,9 @@ namespace Hont.UDPBoxPackage
 
         public override void Process(UDPBox udpBox, byte[] packageBytes, IPEndPoint ipEndPoint)
         {
+            if (!mTemplate.Deserialize(packageBytes)) return;
+
+            UnityEngine.Debug.LogError("mTemplate.PingPong " + mTemplate.PingPong + " magic: " + mTemplate.MagicNumber);
             mTemplate.PingPong = mTemplate.PingPong == PingPongPackage.EPingPong.Ping ? PingPongPackage.EPingPong.Pong : PingPongPackage.EPingPong.Ping;
 
             udpBox.SendMessage(mTemplate.Serialize(), ipEndPoint);

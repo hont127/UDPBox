@@ -37,9 +37,7 @@ namespace Hont.UDPBoxExtensions
 
                     break;
                 case RTT_TestPackage.EOp.B:
-
-                    Debug.Log("RTT: " + (mTemplate.BTime - mTemplate.ATime) / TimeSpan.TicksPerMillisecond + " ms");
-
+                    Debug.Log("RTT: " + ((mTemplate.BTime - mTemplate.ATime) / (float)TimeSpan.TicksPerMillisecond) + " ms");
                     break;
                 default:
                     break;

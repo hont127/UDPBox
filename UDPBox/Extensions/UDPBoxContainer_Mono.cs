@@ -125,7 +125,7 @@ namespace Hont.UDPBoxExtensions
                 GUILayout.Box("Self IP:" + mUDPBoxContainer.SelfIPAddress);
 
             GUILayout.Box("State: " + mUDPBoxContainer.State);
-            GUILayout.Box("Bad Package Rate: " + (mUDPBoxContainer.Statistics_BadPackageCount / (mUDPBoxContainer.Statistics_TotalPackageCount + 0.00001f)));
+            GUILayout.Box("Bad Package Rate: " + (mUDPBoxContainer.Statistics_BadPackageCount / (mUDPBoxContainer.Statistics_TotalPackageCount + 0.00001f)).ToString("F3"));
 
             if (isMaster)
             {
@@ -137,7 +137,7 @@ namespace Hont.UDPBoxExtensions
                     var item = clientIPEndPointList[i];
 
                     if (item.Valid)
-                        GUILayout.Box("[Client] Address: " + item.IPEndPoint.Address + " Port: " + item.IPEndPoint.Port + " Alive timer: " + item.AliveTimer + " Is Established: " + item.IsClientEstablished);
+                        GUILayout.Box("[Client] Address: " + item.IPEndPoint.Address + " Port: " + item.IPEndPoint.Port + " Alive timer: " + item.AliveTimer.ToString("F3") + " Is Established: " + item.IsClientEstablished);
                 }
                 GUILayout.EndVertical();
             }
@@ -148,7 +148,7 @@ namespace Hont.UDPBoxExtensions
                 if (MasterIPConnectInfo.Valid)
                 {
                     var masterIPConnectInfo = mUDPBoxContainer.MasterIPConnectInfo;
-                    GUILayout.Box("MasterIPEndPoint: " + masterIPConnectInfo.IPEndPoint + " Alive timer: " + masterIPConnectInfo.AliveTimer + " Is Established: " + masterIPConnectInfo.IsClientEstablished);
+                    GUILayout.Box("MasterIPEndPoint: " + masterIPConnectInfo.IPEndPoint + " Alive timer: " + masterIPConnectInfo.AliveTimer.ToString("F3") + " Is Established: " + masterIPConnectInfo.IsClientEstablished);
                 }
                 GUILayout.EndVertical();
             }

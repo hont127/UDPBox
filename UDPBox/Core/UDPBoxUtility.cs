@@ -49,6 +49,9 @@ namespace Hont.UDPBoxPackage
                 }
             }
 
+            if (resultIP == null)
+                resultIP = IPAddress.Parse("127.0.0.1");
+
             return resultIP;
         }
 

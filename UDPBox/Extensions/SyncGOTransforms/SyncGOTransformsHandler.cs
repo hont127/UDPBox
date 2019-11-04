@@ -63,9 +63,9 @@ namespace Hont.UDPBoxExtensions
                     if (transformMono != null)
                     {
                         transformMono.gameObject.SetActive(transformInfo.Active);
-                        transformMono.transform.position = new UnityEngine.Vector3(transformInfo.Pos_X, transformInfo.Pos_Y, transformInfo.Pos_Z);
-                        transformMono.transform.eulerAngles = new UnityEngine.Vector3(transformInfo.Euler_X, transformInfo.Euler_Y, transformInfo.Euler_Z);
-                        transformMono.transform.localScale = new UnityEngine.Vector3(transformInfo.SCALE_X, transformInfo.SCALE_Y, transformInfo.SCALE_Z);
+                        transformMono.dstPosition = new UnityEngine.Vector3(transformInfo.Pos_X, transformInfo.Pos_Y, transformInfo.Pos_Z);
+                        transformMono.dstEulerAngle = new UnityEngine.Vector3(transformInfo.Euler_X, transformInfo.Euler_Y, transformInfo.Euler_Z);
+                        transformMono.dstLocalScale = new UnityEngine.Vector3(transformInfo.SCALE_X, transformInfo.SCALE_Y, transformInfo.SCALE_Z);
                     }
                 });
             }

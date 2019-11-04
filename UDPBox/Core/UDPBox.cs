@@ -17,6 +17,12 @@ namespace Hont.UDPBoxPackage
             public int IPEndPoint_Port { get; set; }
         }
 
+        public struct MessageInterceptInfo
+        {
+            public byte[] Bytes { get; set; }
+            public IPEndPoint IPEndPoint { get; set; }
+        }
+
         UdpClient mUdpClient;
         byte[] mPackageHeadBytes;
         List<HandlerBase> mHandlerList;
@@ -33,16 +39,16 @@ namespace Hont.UDPBoxPackage
 
         ACKRequestProcessor mACKRequestProcessor;
 
+        List<Func<MessageInterceptInfo, bool>> mMessageInterceptList;
+
         public int ReceiveMsgThreadSleepTime { get; set; } = 11;
         public int SendMsgThreadSleepTime { get; set; } = 7;
 
         public uint StatisticsBadPackageCount { get; private set; }
         public uint StatisticsTotalPackageCount { get; private set; }
 
-        public event Func<byte[], IPEndPoint, bool> OnMessageIntercept;
-        public event Action<byte[], IPEndPoint> OnSendMessage;
-
         public byte[] PackageHeadBytes { get { return mPackageHeadBytes; } }
+        public event Action<byte[], IPEndPoint> OnSendMessage;
 
 
         public UDPBox(UdpClient udpClient, string packageHead)
@@ -51,6 +57,8 @@ namespace Hont.UDPBoxPackage
             mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
 
             mACKRequestProcessor = new ACKRequestProcessor(this);
+
+            mMessageInterceptList = new List<Func<MessageInterceptInfo, bool>>(4);
 
             mSendQueue = new Queue<QueueInfo>(32);
             mRecvQueue = new Queue<QueueInfo>(32);
@@ -75,6 +83,16 @@ namespace Hont.UDPBoxPackage
             mReceiveMessageLoopThread.Start();
             mSendMessageThread.Start();
             mWorkThread.Start();
+        }
+
+        public void RegistMessageIntercept(Func<MessageInterceptInfo, bool> content)
+        {
+            mMessageInterceptList.Add(content);
+        }
+
+        public void UnregistMessageIntercept(Func<MessageInterceptInfo, bool> content)
+        {
+            mMessageInterceptList.Remove(content);
         }
 
         public void RegistWorkThreadOperate(Action operateAction)
@@ -154,7 +172,6 @@ namespace Hont.UDPBoxPackage
 
                     mUdpClient.Send(item.Content, item.Content.Length, ipEndPoint);
                 }
-
                 Thread.Sleep(SendMsgThreadSleepTime);
             }
         }
@@ -165,16 +182,9 @@ namespace Hont.UDPBoxPackage
 
             while (!mIsReleased)
             {
-                var bytes = default(byte[]);
-
                 try
                 {
-                    lock (mUdpClient)
-                    {
-                        ipEndPoint.Address = IPAddress.Any;
-                        ipEndPoint.Port = 0;
-                        bytes = mUdpClient.Receive(ref ipEndPoint);
-                    }
+                    mUdpClient.BeginReceive(ReceiveCallback, ipEndPoint);
                 }
                 catch (SocketException socketException) when (socketException.ErrorCode == 10060)
                 {
@@ -187,17 +197,23 @@ namespace Hont.UDPBoxPackage
                     UnityEngine.Debug.LogError(e);
                 }
 
-                if (bytes != null)
-                {
-                    mRecvQueue.Enqueue(new QueueInfo()
-                    {
-                        Content = bytes,
-                        IPEndPointAddress_Str = ipEndPoint.Address.ToString(),
-                        IPEndPoint_Port = ipEndPoint.Port,
-                    });
-                }
-
                 Thread.Sleep(ReceiveMsgThreadSleepTime);
+            }
+        }
+
+        void ReceiveCallback(IAsyncResult asyncResult)
+        {
+            var ipEndPoint = asyncResult.AsyncState as IPEndPoint;
+            var bytes = mUdpClient.EndReceive(asyncResult, ref ipEndPoint);
+
+            if (bytes != null)
+            {
+                mRecvQueue.Enqueue(new QueueInfo()
+                {
+                    Content = bytes,
+                    IPEndPointAddress_Str = ipEndPoint.Address.ToString(),
+                    IPEndPoint_Port = ipEndPoint.Port,
+                });
             }
         }
 
@@ -248,8 +264,10 @@ namespace Hont.UDPBoxPackage
                 return;
             }
 
-            if (OnMessageIntercept != null && OnMessageIntercept(bytes, ipEndPoint))
-                return;
+            var flag = false;
+            for (int i = 0, iMax = mMessageInterceptList.Count; i < iMax; i++)
+                flag |= mMessageInterceptList[i](new MessageInterceptInfo() { Bytes = bytes, IPEndPoint = ipEndPoint });
+            if (flag) return;
 
             var targetHandler = default(HandlerBase);
             for (int i = 0, iMax = mHandlerList.Count; i < iMax; i++)

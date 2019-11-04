@@ -27,7 +27,7 @@ namespace Hont.UDPBoxPackage
         long mLastTick;
 
 
-        public ACKRequestProcessor(UDPBox udpBox, float ackDetectDelayTime = 5f)
+        public ACKRequestProcessor(UDPBox udpBox, float ackDetectDelayTime = 0.3f)
         {
             mWaitACKInfoList = new List<WaitACKInfo>(32);
 
@@ -39,15 +39,15 @@ namespace Hont.UDPBoxPackage
         {
             mWaitACKInfoList.Clear();
             mACKPackageTemplate = new ACKPackage(mUdpBox.PackageHeadBytes);
-            mUdpBox.OnMessageIntercept += OnACKMessageIntercept;
             mUdpBox.OnSendMessage += OnSendMessage;
+            mUdpBox.RegistMessageIntercept(OnACKMessageIntercept);
             mUdpBox.RegistWorkThreadOperate(ACKWaitPackageLogicUpdate);
         }
 
         public void Release()
         {
-            mUdpBox.OnMessageIntercept -= OnACKMessageIntercept;
             mUdpBox.OnSendMessage -= OnSendMessage;
+            mUdpBox.UnregistMessageIntercept(OnACKMessageIntercept);
             mUdpBox.UnregistWorkThreadOperate(ACKWaitPackageLogicUpdate);
         }
 
@@ -88,23 +88,23 @@ namespace Hont.UDPBoxPackage
             }
         }
 
-        bool OnACKMessageIntercept(byte[] bytes, IPEndPoint endPoint)
+        bool OnACKMessageIntercept(UDPBox.MessageInterceptInfo messageInterceptInfo)
         {
             var result = false;
 
             short type = 0;
             ushort magicNumber = 0;
             short id = 0;
-            UDPBoxUtility.GetPackageBaseInfo(bytes, mUdpBox.PackageHeadBytes, out type, out magicNumber, out id);
+            UDPBoxUtility.GetPackageBaseInfo(messageInterceptInfo.Bytes, mUdpBox.PackageHeadBytes, out type, out magicNumber, out id);
             if (type == (short)EPackageType.Need_Ack_Session)
             {
                 mACKPackageTemplate.ACK_ID = id;
                 mACKPackageTemplate.ACK_MagicNumber = magicNumber;
-                mUdpBox.SendMessage(mACKPackageTemplate.Serialize(), endPoint);
+                mUdpBox.SendMessage(mACKPackageTemplate.Serialize(), messageInterceptInfo.IPEndPoint);
             }
             else if (id == UDPBoxUtility.ACK_ID)
             {
-                mACKPackageTemplate.Deserialize(bytes);
+                mACKPackageTemplate.Deserialize(messageInterceptInfo.Bytes);
 
                 var ack_id = mACKPackageTemplate.ACK_ID;
                 var ack_MagicNumber = mACKPackageTemplate.ACK_MagicNumber;

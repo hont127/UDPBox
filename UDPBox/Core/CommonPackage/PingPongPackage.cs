@@ -15,7 +15,7 @@ namespace Hont.UDPBoxPackage
             : base(headBytes)
         {
             base.ID = UDPBoxUtility.PING_PONG_ID;
-
+            base.Type = (short)EPackageType.System;
             Args = new PackageArgument[] { new PackageArgument_Int() };
         }
 

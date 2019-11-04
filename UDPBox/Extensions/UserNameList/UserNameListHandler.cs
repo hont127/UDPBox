@@ -14,7 +14,6 @@ namespace Hont.UDPBoxExtensions
         UDPBoxContainer mUDPBoxContainer;
 
         UserNameListPackage mTemplate;
-        ushort mMagicNumber;
         long mLastWorkThreadTime;
         float mRefreshDelayTimer;
         public string SelfUserName { get; set; }

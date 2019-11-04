@@ -62,7 +62,6 @@ namespace Hont.UDPBoxPackage
 
         public uint Statistics_BadPackageCount { get { return UDPBox.StatisticsBadPackageCount; } }
         public uint Statistics_TotalPackageCount { get { return UDPBox.StatisticsTotalPackageCount; } }
-
         public string BroadcastNetPrefixIP { get; set; } = "192.168.1.";
 
         public UDPBox UDPBox { get; private set; }
@@ -142,7 +141,7 @@ namespace Hont.UDPBoxPackage
                 mUDPBoxBroadcast.StartBroadcast(mBroadcastPackageTemplate.Serialize(), BroadcastNetPrefixIP);
             }
 
-            UDPBox.OnMessageIntercept += InterceptAndUpdateConnectState;
+            UDPBox.RegistMessageIntercept(InterceptAndUpdateConnectState);
             UDPBox.RegistWorkThreadOperate(RefreshConnectStateInWorkThread);
             UDPBox.Start();
         }
@@ -152,7 +151,7 @@ namespace Hont.UDPBoxPackage
             State = EState.Released;
             mBroadcastUdpClient.Close();
             mBroadcastUdpClient.Dispose();
-            UDPBox.OnMessageIntercept -= InterceptAndUpdateConnectState;
+            UDPBox.UnregistMessageIntercept(InterceptAndUpdateConnectState);
             UDPBox.UnregistWorkThreadOperate(RefreshConnectStateInWorkThread);
             mUDPBoxBroadcast?.ReleaseThread();
             UDPBox.Dispose();
@@ -297,15 +296,15 @@ namespace Hont.UDPBoxPackage
             mLastWorkThreadTime = DateTime.Now.Ticks;
         }
 
-        bool InterceptAndUpdateConnectState(byte[] bytes, IPEndPoint ipEndPoint)
+        bool InterceptAndUpdateConnectState(UDPBox.MessageInterceptInfo messageInterceptInfo)
         {
-            if (UDPBoxUtility.PackageIsBroken(bytes, PackageHeadBytes)) return true;
+            if (UDPBoxUtility.PackageIsBroken(messageInterceptInfo.Bytes, PackageHeadBytes)) return true;
 
-            var packageID = UDPBoxUtility.GetPackageID(bytes, PackageHeadBytes);
+            var packageID = UDPBoxUtility.GetPackageID(messageInterceptInfo.Bytes, PackageHeadBytes);
 
             if (packageID == UDPBoxUtility.ESTABLISH_SERVER_CONNECT_ID)
             {
-                if (!mEstablishServerConnectPackage.Deserialize(bytes)) return false;
+                if (!mEstablishServerConnectPackage.Deserialize(messageInterceptInfo.Bytes)) return true;
 
                 var establishIPAddress = mEstablishServerConnectPackage.IpAddress;
                 var establishPort = mEstablishServerConnectPackage.Port;
@@ -320,8 +319,8 @@ namespace Hont.UDPBoxPackage
             }
             else if (packageID == UDPBoxUtility.PING_PONG_ID)
             {
-                if (!mPingPongPackageTemplate.Deserialize(bytes)) return false;
-                if (mPingPongPackageTemplate.PingPong == PingPongPackage.EPingPong.Ping) return false;
+                if (!mPingPongPackageTemplate.Deserialize(messageInterceptInfo.Bytes)) return true;
+                if (mPingPongPackageTemplate.PingPong == PingPongPackage.EPingPong.Pong) return true;
 
                 lock (this)
                 {
@@ -330,7 +329,7 @@ namespace Hont.UDPBoxPackage
                         for (int i = 0, iMax = ClientIPConnectList.Count; i < iMax; i++)
                         {
                             var clientEndPoint = ClientIPConnectList[i];
-                            if (clientEndPoint.IPEndPoint.Equals(ipEndPoint))
+                            if (clientEndPoint.IPEndPoint.Equals(messageInterceptInfo.IPEndPoint))
                             {
                                 ClientIPConnectList[i] = new ConnectInfo() { AliveTimer = 0f, IPEndPoint = clientEndPoint.IPEndPoint, IsClientEstablished = true };
                             }
@@ -338,14 +337,13 @@ namespace Hont.UDPBoxPackage
                     }
                     else
                     {
-                        if (MasterIPConnectInfo.Valid && MasterIPConnectInfo.IPEndPoint.Equals(ipEndPoint))
+                        if (MasterIPConnectInfo.Valid && MasterIPConnectInfo.IPEndPoint.Equals(messageInterceptInfo.IPEndPoint))
                         {
-                            MasterIPConnectInfo = new ConnectInfo() { AliveTimer = 0f, IPEndPoint = ipEndPoint };
+                            MasterIPConnectInfo = new ConnectInfo() { AliveTimer = 0f, IPEndPoint = messageInterceptInfo.IPEndPoint };
                         }
                     }
-
-                    return true;
                 }
+                return true;
             }
 
             return false;
