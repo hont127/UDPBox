@@ -7,6 +7,8 @@ namespace Hont.UDPBoxPackage
 {
     public class ACKRequestProcessor
     {
+        const int MAGIC_NUMBER_MARK_COUNT = 32;
+
         public struct WaitACKInfo
         {
             public byte[] Bytes { get; set; }
@@ -19,10 +21,18 @@ namespace Hont.UDPBoxPackage
             public int IPEndPoint_Port { get; set; }
         }
 
+        public struct PackageCompareInfo
+        {
+            public short ID { get; set; }
+            public ushort MagicNumber { get; set; }
+        }
+
+
         float mACKDetectDelayTime;
         UDPBox mUdpBox;
         ACKPackage mACKPackageTemplate;
         List<WaitACKInfo> mWaitACKInfoList;
+        Queue<PackageCompareInfo> mMagicNumberMarkQueue;
 
         long mLastTick;
 
@@ -30,6 +40,7 @@ namespace Hont.UDPBoxPackage
         public ACKRequestProcessor(UDPBox udpBox, float ackDetectDelayTime = 0.3f)
         {
             mWaitACKInfoList = new List<WaitACKInfo>(32);
+            mMagicNumberMarkQueue = new Queue<PackageCompareInfo>(MAGIC_NUMBER_MARK_COUNT);
 
             mUdpBox = udpBox;
             mACKDetectDelayTime = ackDetectDelayTime;
@@ -96,13 +107,37 @@ namespace Hont.UDPBoxPackage
             ushort magicNumber = 0;
             short id = 0;
             UDPBoxUtility.GetPackageBaseInfo(messageInterceptInfo.Bytes, mUdpBox.PackageHeadBytes, out type, out magicNumber, out id);
-            if (type == (short)EPackageType.Need_Ack_Session)
+
+            //--------------------------------------------------------------------
+            var flag = false;
+            lock (mMagicNumberMarkQueue)
             {
+                foreach (var item in mMagicNumberMarkQueue)
+                {
+                    if (item.ID == id && item.MagicNumber == magicNumber)
+                    {
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+            if (flag) return true;
+            //--------------------------------------------------------------------Package repeat.
+
+            if (type == (short)EPackageType.Need_Ack_Session)//Received generic ack package.
+            {
+                lock (mMagicNumberMarkQueue)
+                {
+                    if (mMagicNumberMarkQueue.Count > MAGIC_NUMBER_MARK_COUNT)
+                        mMagicNumberMarkQueue.Dequeue();
+                    mMagicNumberMarkQueue.Enqueue(new PackageCompareInfo() { ID = id, MagicNumber = magicNumber });
+                }
+
                 mACKPackageTemplate.ACK_ID = id;
                 mACKPackageTemplate.ACK_MagicNumber = magicNumber;
                 mUdpBox.SendMessage(mACKPackageTemplate.Serialize(), messageInterceptInfo.IPEndPoint);
             }
-            else if (id == UDPBoxUtility.ACK_ID)
+            else if (id == UDPBoxUtility.ACK_ID)//Received ack package.
             {
                 mACKPackageTemplate.Deserialize(messageInterceptInfo.Bytes);
 

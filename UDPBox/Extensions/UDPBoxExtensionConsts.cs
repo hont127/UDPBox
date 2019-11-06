@@ -12,6 +12,8 @@ namespace Hont.UDPBoxExtensions
         public const int RTT = 103;
         public const int USER_NAME_LIST = 104;
         public const int LEVEL_STATE_CHANGED = 105;
+        public const int RESOURCES_INSTANCE = 106;
+        public const int REQUEST_STRING = 107;
     }
 }
 

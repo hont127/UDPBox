@@ -64,7 +64,7 @@ namespace Hont.UDPBoxExtensions
 
         public void UnregistHandler(HandlerBase handler)
         {
-            mUDPBoxContainer.RegistHandler(handler);
+            mUDPBoxContainer.UnregistHandler(handler);
         }
 
         public void RegistWorkThreadOperate(Action operateAction)

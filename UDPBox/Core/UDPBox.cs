@@ -51,11 +51,8 @@ namespace Hont.UDPBoxPackage
         public event Action<byte[], IPEndPoint> OnSendMessage;
 
 
-        public UDPBox(UdpClient udpClient, string packageHead)
+        public UDPBox()
         {
-            mUdpClient = udpClient;
-            mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
-
             mACKRequestProcessor = new ACKRequestProcessor(this);
 
             mMessageInterceptList = new List<Func<MessageInterceptInfo, bool>>(4);
@@ -73,6 +70,18 @@ namespace Hont.UDPBoxPackage
             mSendMessageThread = new Thread(SendMessageThreadLoop);
             mSendMessageThread.Priority = ThreadPriority.AboveNormal;
             mWorkThread = new Thread(WorkThreadLoop);
+        }
+
+        public UDPBox(UdpClient udpClient, string packageHead)
+            : this()
+        {
+            Initialization(udpClient, packageHead);
+        }
+
+        public void Initialization(UdpClient udpClient, string packageHead)
+        {
+            mUdpClient = udpClient;
+            mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
         }
 
         public void Start()

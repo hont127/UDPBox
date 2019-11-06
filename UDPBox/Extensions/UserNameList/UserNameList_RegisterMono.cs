@@ -9,7 +9,6 @@ namespace Hont.UDPBoxExtensions
     public class UserNameList_RegisterMono : MonoBehaviour
     {
         public UDPBoxContainer_Mono udpBoxContainer;
-        [InspectorReadonly]
         public List<UserNameInfoData> userNameList;
         public string selfUserName = "Tom";
         public bool isDebug;
