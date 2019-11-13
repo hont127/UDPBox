@@ -23,19 +23,7 @@ mUDPBox.Start();
 ```
 </BR>
 ### UDPBoxContainer.cs example:
-```C#
-mUDPBoxContainer.Proj_Prefix = "MyProj";//your project prefix.
-mUDPBoxContainer.BroadcastListenPort = 8201;//LAN-Network broadcast listen port.
-mUDPBoxContainer.BroadcastSendPort = 8202;//LAN-Network broadcast recv port.
-mUDPBoxContainer.UdpBoxBeginPort = 8210;//UDPBOX Begin port.
-mUDPBoxContainer.UdpBoxEndPort = 8220;//UDPBOX End port.
-mUDPBoxContainer.BroadcastNetPrefixIP = "192.168.100.";//192.168.255.x or 192.168.1.x.
-
-mUDPBoxContainer.Initialization(UDPBoxUtility.DefaultHead);//Input package head bytes and init.
-mUDPBoxContainer.SendMsgThreadSleepTime = 3;//Send msg sleep time.
-
-mUDPBoxContainer.Start(isMaster);//Master or Client?
-```
+qweqwe
 </BR>
 ### Package format:
 ```C#
