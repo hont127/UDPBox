@@ -21,36 +21,3 @@ mUDPBox.RegistHandler(...);
 mUDPBox.RegistHandler(...);
 mUDPBox.Start();
 ```
-</BR>
-### Package format:
-```C#
-Package:  HEAD(bytes)|TYPE(short)|MAGICNUMBER(ushort)|ID(short)|ContentLength(uint)|Args(bytes)
-and through the 'UDPClient' send and received.
-```
-### Process Handler example:
-```C#
-class ExampeHandler : HandlerBase
-{
-    ExamplePackage mTemplate;//Serialize or Deserialize.
-
-
-    public ExampeHandler(byte[] packageHead)
-    {
-        mTemplate = new ExamplePackage(packageHead);//init template package.
-    }
-
-    protected override short[] GetCacheProcessableID()//Set processable id.
-    {
-        return new short[] { 1001, 1002 };
-    }
-
-    public override void Process(UDPBox udpBox, byte[] packageBytes, IPEndPoint ipEndPoint)
-    {
-        if (!mTemplate.Deserialize(packageBytes)) return;//Deserialize.
-
-        //Process...
-
-        udpBox.SendMessage(mTemplate.Serialize(), ipEndPoint);//Sendback to ipEndPoint.
-    }
-}
-```
