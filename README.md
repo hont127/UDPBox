@@ -22,7 +22,6 @@ mUDPBox.RegistHandler(...);
 mUDPBox.Start();
 ```
 </BR>
-</BR>
 ### UDPBoxContainer.cs example:
 ```C#
 mUDPBoxContainer.Proj_Prefix = "MyProj";//your project prefix.
@@ -37,8 +36,6 @@ mUDPBoxContainer.SendMsgThreadSleepTime = 3;//Send msg sleep time.
 
 mUDPBoxContainer.Start(isMaster);//Master or Client?
 ```
-</BR>
-</BR>
 </BR>
 ### Package format:
 ```C#
