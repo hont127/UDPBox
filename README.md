@@ -22,9 +22,6 @@ mUDPBox.RegistHandler(...);
 mUDPBox.Start();
 ```
 </BR>
-### UDPBoxContainer.cs example:
-qweqwe
-</BR>
 ### Package format:
 ```C#
 Package:  HEAD(bytes)|TYPE(short)|MAGICNUMBER(ushort)|ID(short)|ContentLength(uint)|Args(bytes)
