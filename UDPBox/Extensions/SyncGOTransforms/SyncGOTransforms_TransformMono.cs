@@ -18,6 +18,7 @@ namespace Hont.UDPBoxExtensions
         [HideInInspector]
         public Vector3 dstLocalScale;
 
+
         void LateUpdate()
         {
             if (isSelfControl) return;

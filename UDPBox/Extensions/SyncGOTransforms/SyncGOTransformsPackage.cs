@@ -20,7 +20,7 @@ namespace Hont.UDPBoxExtensions
         {
             base.ID = UDPBoxExtensionConsts.SYNC_GO_TRANSFORMS;
 
-            TransformList = new List<SyncGOTransformData>(12);
+            TransformList = new List<SyncGOTransformData>(8);
 
             Args = new PackageArgument[]
             {

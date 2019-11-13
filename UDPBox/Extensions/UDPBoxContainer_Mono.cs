@@ -20,15 +20,17 @@ namespace Hont.UDPBoxExtensions
 
         public int broadcastSendPort = 1234;
         public int broadcastListenPort = 1235;
-        public int udpBoxPort = 1236;
+        public int udpBoxBeginPort = 1240;
+        public int udpBoxEndPort = 1250;
         [Tooltip("format: \"192.168.1.\"")]
         public string broadcastNetprefixIP = "192.168.1.";
         public string proj_prefix = "Demo";
         public int sendMsgThreadSleepTime_MS = 35;
-        public int recvMsgThreadSleepTime_MS = 32;
 
         public UDPBox UDPBox { get { return mUDPBoxContainer.UDPBox; } }
         public UDPBoxContainer.EState State { get { return mUDPBoxContainer.State; } }
+
+        public byte[] PackageHeadBytes { get { return mUDPBoxContainer.PackageHeadBytes; } }
 
         public event Action OnConnectedMaster
         {
@@ -51,6 +53,11 @@ namespace Hont.UDPBoxExtensions
             remove { mUDPBoxContainer.OnClientTimeOut -= value; }
         }
 
+
+        public void SendUDPMessageWithRandomPort(byte[] bytes, UDPBoxContainer.ConnectInfo connectInfo)
+        {
+            mUDPBoxContainer.SendUDPMessageWithRandomPort(bytes, connectInfo);
+        }
 
         public void SendUDPMessage(byte[] bytes, IPEndPoint ipEndPoint)
         {
@@ -82,12 +89,12 @@ namespace Hont.UDPBoxExtensions
             mUDPBoxContainer.Proj_Prefix = proj_prefix;
             mUDPBoxContainer.BroadcastListenPort = broadcastListenPort;
             mUDPBoxContainer.BroadcastSendPort = broadcastSendPort;
-            mUDPBoxContainer.UdpBoxPort = udpBoxPort;
+            mUDPBoxContainer.UdpBoxBeginPort = udpBoxBeginPort;
+            mUDPBoxContainer.UdpBoxEndPort = udpBoxEndPort;
             mUDPBoxContainer.BroadcastNetPrefixIP = broadcastNetprefixIP;
 
-            mUDPBoxContainer.Initialization();
+            mUDPBoxContainer.Initialization(proj_prefix + "_" + UDPBoxUtility.DefaultHead);
             mUDPBoxContainer.SendMsgThreadSleepTime = sendMsgThreadSleepTime_MS;
-            mUDPBoxContainer.ReceiveMsgThreadSleepTime = recvMsgThreadSleepTime_MS;
 
             mUDPBoxContainer.Start(isMaster);
         }
@@ -102,11 +109,25 @@ namespace Hont.UDPBoxExtensions
             return mUDPBoxContainer;
         }
 
+        public int GetRandomUDPBoxPort()
+        {
+            return mUDPBoxContainer.GetRandomUDPBoxPort();
+        }
+
+        public UDPBoxContainer.ConnectInfo UpdateConnectInfoToRandomPort(UDPBoxContainer.ConnectInfo connectInfo)
+        {
+            return mUDPBoxContainer.UpdateConnectInfoToRandomPort(connectInfo);
+        }
+
         void OnEnable()
         {
             UDPBox_GameThreadMediator.Instance.GetHashCode();
 
             mUDPBoxContainer = new UDPBoxContainer();
+            mUDPBoxContainer.OnException += (exception) =>
+            {
+                UnityEngine.Debug.LogError(exception);
+            };
 
             if (GetComponent<UDPBoxMasterSearcher>() == null)
                 RestartUDPBoxContainer();

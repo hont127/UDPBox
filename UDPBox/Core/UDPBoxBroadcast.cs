@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System;
+﻿using System;
 using System.Net;
 using System.Threading;
 using System.Collections;
@@ -46,7 +45,6 @@ namespace Hont.UDPBoxPackage
                             try
                             {
                                 var ipEndPoint = new IPEndPoint(IPAddress.Parse(netPrefixIP + i), mBroadcastPort);
-                                //Debug.LogError("Broadcast : " + ipEndPoint);
                                 mUdpClient.Send(bytes, bytes.Length, ipEndPoint);
                             }
                             catch (SocketException socket_exception) when (socket_exception.ErrorCode == 10051)

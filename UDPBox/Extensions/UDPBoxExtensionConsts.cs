@@ -14,6 +14,7 @@ namespace Hont.UDPBoxExtensions
         public const int LEVEL_STATE_CHANGED = 105;
         public const int RESOURCES_INSTANCE = 106;
         public const int REQUEST_STRING = 107;
+        public const int OPERATE_ANIMATOR = 108;
     }
 }
 

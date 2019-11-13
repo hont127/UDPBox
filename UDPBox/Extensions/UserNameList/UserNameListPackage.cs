@@ -27,6 +27,7 @@ namespace Hont.UDPBoxExtensions
                 new PackageArgument_Int(),
                 new PackageArgument_StringList(),
                 new PackageArgument_IntList(),
+                new PackageArgument_IntList(),
                 new PackageArgument_StringList(),
             };
         }
@@ -36,11 +37,13 @@ namespace Hont.UDPBoxExtensions
             (Args[0] as PackageArgument_Int).Value = (int)Op;
 
             var ipAddressList = (Args[1] as PackageArgument_StringList).Value;
-            var portList = (Args[2] as PackageArgument_IntList).Value;
-            var userNameList = (Args[3] as PackageArgument_StringList).Value;
+            var beginPortList = (Args[2] as PackageArgument_IntList).Value;
+            var endPortList = (Args[3] as PackageArgument_IntList).Value;
+            var userNameList = (Args[4] as PackageArgument_StringList).Value;
 
             ipAddressList.Clear();
-            portList.Clear();
+            beginPortList.Clear();
+            endPortList.Clear();
             userNameList.Clear();
 
             for (int i = 0, iMax = UserNameInfoList.Count; i < iMax; i++)
@@ -48,7 +51,8 @@ namespace Hont.UDPBoxExtensions
                 var userNameInfo = UserNameInfoList[i];
 
                 ipAddressList.Add(userNameInfo.IPAddress);
-                portList.Add(userNameInfo.Port);
+                beginPortList.Add(userNameInfo.BeginPort);
+                endPortList.Add(userNameInfo.EndPort);
                 userNameList.Add(userNameInfo.UserName);
             }
 
@@ -63,21 +67,24 @@ namespace Hont.UDPBoxExtensions
             Op = (EOperate)(Args[0] as PackageArgument_Int).Value;
 
             var ipAddressList = (Args[1] as PackageArgument_StringList).Value;
-            var portList = (Args[2] as PackageArgument_IntList).Value;
-            var userNameList = (Args[3] as PackageArgument_StringList).Value;
+            var beginPortList = (Args[2] as PackageArgument_IntList).Value;
+            var endPortList = (Args[3] as PackageArgument_IntList).Value;
+            var userNameList = (Args[4] as PackageArgument_StringList).Value;
 
             UserNameInfoList.Clear();
 
             for (int i = 0, iMax = ipAddressList.Count; i < iMax; i++)
             {
                 var ipAddress = ipAddressList[i];
-                var port = portList[i];
+                var beginPort = beginPortList[i];
+                var endPort = endPortList[i];
                 var userName = userNameList[i];
 
                 UserNameInfoList.Add(new UserNameInfoData()
                 {
                     IPAddress = ipAddress,
-                    Port = port,
+                    BeginPort = beginPort,
+                    EndPort = endPort,
                     UserName = userName,
                 });
             }

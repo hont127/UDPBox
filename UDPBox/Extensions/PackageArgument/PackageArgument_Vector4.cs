@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 
 using UnityEngine;
+using Hont.UDPBoxPackage;
 
-namespace Hont.UDPBoxPackage
+namespace Hont.UDPBoxExtensions
 {
     public class PackageArgument_Vector4 : PackageArgument
     {

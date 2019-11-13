@@ -10,7 +10,8 @@ namespace Hont.UDPBoxExtensions
     [DefaultExecutionOrder(5)]
     public class RequestString_RegisterMono : MonoBehaviour
     {
-        public UDPBoxPureContainer_Mono udpBoxContainer;
+        public UDPBoxContainer_Mono udpBoxContainer;
+        public UDPBoxPureContainer_Mono udpBoxPureContainer;
 
         RequestStringHandler mHandler;
 
@@ -20,14 +21,22 @@ namespace Hont.UDPBoxExtensions
 
         void OnEnable()
         {
-            mHandler = new RequestStringHandler(OnProcessRequestMethod, OnProcessResponseMethod);
+            mHandler = new RequestStringHandler(udpBoxContainer == null
+                    ? udpBoxPureContainer.UDPBox.PackageHeadBytes : udpBoxContainer.PackageHeadBytes
+                , OnProcessRequestMethod, OnProcessResponseMethod);
 
-            udpBoxContainer.UDPBox.RegistHandler(mHandler);
+            if (udpBoxPureContainer != null)
+                udpBoxPureContainer.UDPBox.RegistHandler(mHandler);
+            else
+                udpBoxContainer.RegistHandler(mHandler);
         }
 
         void OnDisable()
         {
-            udpBoxContainer.UDPBox.UnregistHandler(mHandler);
+            if (udpBoxPureContainer != null)
+                udpBoxPureContainer.UDPBox.UnregistHandler(mHandler);
+            else
+                udpBoxContainer.UnregistHandler(mHandler);
         }
 
         string OnProcessRequestMethod(string request)

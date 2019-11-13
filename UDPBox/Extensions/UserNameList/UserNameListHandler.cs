@@ -20,10 +20,10 @@ namespace Hont.UDPBoxExtensions
         public List<UserNameInfoData> UserNameInfoList { get; private set; }
 
 
-        public UserNameListHandler(UDPBoxContainer container)
+        public UserNameListHandler(byte[] packageHeadBytes, UDPBoxContainer container)
         {
             mUDPBoxContainer = container;
-            mTemplate = new UserNameListPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new UserNameListPackage(packageHeadBytes);
 
             UserNameInfoList = new List<UserNameInfoData>(16);
         }
@@ -66,7 +66,8 @@ namespace Hont.UDPBoxExtensions
                     mTemplate.UserNameInfoList.Add(new UserNameInfoData()
                     {
                         IPAddress = mUDPBoxContainer.SelfIPAddress.ToString(),
-                        Port = mUDPBoxContainer.UdpBoxPort,
+                        BeginPort = mUDPBoxContainer.UdpBoxBeginPort,
+                        EndPort = mUDPBoxContainer.UdpBoxEndPort,
                         UserName = SelfUserName,
                     });
                     udpBox.SendMessage(mTemplate.Serialize(), ipEndPoint);
@@ -82,7 +83,8 @@ namespace Hont.UDPBoxExtensions
                         mTemplate.UserNameInfoList.Add(new UserNameInfoData()
                         {
                             IPAddress = item.IPAddress,
-                            Port = item.Port,
+                            BeginPort = item.BeginPort,
+                            EndPort = item.EndPort,
                             UserName = item.UserName,
                         });
                     }
@@ -93,12 +95,17 @@ namespace Hont.UDPBoxExtensions
                 case UserNameListPackage.EOperate.RestoreList:
 
                     UserNameInfoList.Clear();
-                    UnityEngine.Debug.LogError("rESTORE ALL: " + mTemplate.UserNameInfoList.Count);
                     for (int i = 0, iMax = mTemplate.UserNameInfoList.Count; i < iMax; i++)
                     {
                         var item = mTemplate.UserNameInfoList[i];
 
-                        UserNameInfoList.Add(new UserNameInfoData() { IPAddress = item.IPAddress, Port = item.Port, UserName = item.UserName });
+                        UserNameInfoList.Add(new UserNameInfoData()
+                        {
+                            IPAddress = item.IPAddress,
+                            BeginPort = item.BeginPort,
+                            EndPort = item.EndPort,
+                            UserName = item.UserName
+                        });
                     }
 
                     break;
@@ -123,7 +130,6 @@ namespace Hont.UDPBoxExtensions
                     {
                         mTemplate.Op = UserNameListPackage.EOperate.FetchAll;
                         mUDPBoxContainer.SendUDPMessage(mTemplate.Serialize(), mUDPBoxContainer.MasterIPConnectInfo.IPEndPoint);
-                        UnityEngine.Debug.LogError("send msg fetch all!   " + mUDPBoxContainer.MasterIPConnectInfo.IPEndPoint);
                     }
                 }
 
@@ -141,13 +147,16 @@ namespace Hont.UDPBoxExtensions
         {
             var userNameInfo = fetchedUser;
 
-            var userInfoIndex = UserNameInfoList.FindIndex(m => m.IPAddress == userNameInfo.IPAddress && m.Port == userNameInfo.Port);
+            var userInfoIndex = UserNameInfoList.FindIndex(m => m.IPAddress == userNameInfo.IPAddress
+                && m.BeginPort == userNameInfo.BeginPort && m.EndPort == userNameInfo.EndPort);
+
             if (userInfoIndex == -1)
             {
                 UserNameInfoList.Add(new UserNameInfoData()
                 {
                     IPAddress = userNameInfo.IPAddress,
-                    Port = userNameInfo.Port,
+                    BeginPort = userNameInfo.BeginPort,
+                    EndPort = userNameInfo.EndPort,
                     UserName = userNameInfo.UserName
                 });
             }
@@ -156,7 +165,8 @@ namespace Hont.UDPBoxExtensions
                 UserNameInfoList[userInfoIndex] = new UserNameInfoData()
                 {
                     IPAddress = userNameInfo.IPAddress,
-                    Port = userNameInfo.Port,
+                    BeginPort = userNameInfo.BeginPort,
+                    EndPort = userNameInfo.EndPort,
                     UserName = userNameInfo.UserName
                 };
             }
@@ -174,7 +184,9 @@ namespace Hont.UDPBoxExtensions
 
                 var address = item.IPEndPoint.Address.ToString();
                 var port = item.IPEndPoint.Port;
-                var userNameInfoIndex = UserNameInfoList.FindIndex(m => m.IPAddress == address && m.Port == port);
+                var userNameInfoIndex = UserNameInfoList.FindIndex(m => m.IPAddress == address
+                        && m.BeginPort <= port && m.EndPort > port);
+
                 if (userNameInfoIndex == -1)
                 {
                     mTemplate.Op = UserNameListPackage.EOperate.Fetch;
@@ -191,25 +203,39 @@ namespace Hont.UDPBoxExtensions
 
                 var foundClientObject = clientIpConnectList.Find(m => m.Valid
                     && m.IPEndPoint.Address.ToString() == marked_userNameInfo.IPAddress
-                    && m.IPEndPoint.Port == marked_userNameInfo.Port);
+                    && m.IPEndPoint.Port >= marked_userNameInfo.BeginPort
+                    && m.IPEndPoint.Port < marked_userNameInfo.EndPort);
 
                 if (!foundClientObject.Valid)
                     UserNameInfoList.RemoveAt(i);
             }
             var selfIPAddress = mUDPBoxContainer.SelfIPAddress.ToString();
-            var selfPort = mUDPBoxContainer.UdpBoxPort;
+            var selfBeginPort = mUDPBoxContainer.UdpBoxBeginPort;
+            var selfEndPort = mUDPBoxContainer.UdpBoxEndPort;
 
             var selfUserNameInfoIndex = UserNameInfoList
-                .FindIndex(m => m.IPAddress == selfIPAddress && m.Port == selfPort);
+                .FindIndex(m => m.IPAddress == selfIPAddress
+                    && m.BeginPort == selfBeginPort && m.EndPort == selfEndPort);
 
             if (selfUserNameInfoIndex == -1)
             {
-                UserNameInfoList.Add(new UserNameInfoData() { IPAddress = selfIPAddress, Port = selfPort, UserName = SelfUserName });
+                UserNameInfoList.Add(new UserNameInfoData()
+                {
+                    IPAddress = selfIPAddress,
+                    BeginPort = selfBeginPort,
+                    EndPort = selfEndPort,
+                    UserName = SelfUserName,
+                });
             }
             else
             {
-                UserNameInfoList[selfUserNameInfoIndex]
-                    = new UserNameInfoData() { IPAddress = selfIPAddress, Port = selfPort, UserName = SelfUserName };
+                UserNameInfoList[selfUserNameInfoIndex] = new UserNameInfoData()
+                {
+                    IPAddress = selfIPAddress,
+                    BeginPort = selfBeginPort,
+                    EndPort = selfEndPort,
+                    UserName = SelfUserName,
+                };
             }
         }
     }

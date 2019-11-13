@@ -264,10 +264,13 @@ MonoBehaviour:
   isMaster: 1
   isDebug: 1
   broadcastSendPort: 1234
-  broadcastListenPort: 1234
-  udpBoxPort: 1235
+  broadcastListenPort: 1235
+  udpBoxBeginPort: 1240
+  udpBoxEndPort: 1250
   broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
+  sendMsgThreadSleepTime_MS: 35
+  recvMsgThreadSleepTime_MS: 32
 --- !u!4 &893708869
 Transform:
   m_ObjectHideFlags: 0
@@ -342,7 +345,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &995071311
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -356,11 +359,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isMaster: 0
   isDebug: 1
-  broadcastSendPort: 1234
+  broadcastSendPort: 1235
   broadcastListenPort: 1234
-  udpBoxPort: 1235
-  broadcastNetprefixIP: 192.168.253.
+  udpBoxBeginPort: 1250
+  udpBoxEndPort: 1260
+  broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
+  sendMsgThreadSleepTime_MS: 35
+  recvMsgThreadSleepTime_MS: 32
 --- !u!4 &995071312
 Transform:
   m_ObjectHideFlags: 0

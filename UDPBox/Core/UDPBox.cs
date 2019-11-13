@@ -23,16 +23,21 @@ namespace Hont.UDPBoxPackage
             public IPEndPoint IPEndPoint { get; set; }
         }
 
-        UdpClient mUdpClient;
+        List<UdpClient> mUdpClientsList;
         byte[] mPackageHeadBytes;
         List<HandlerBase> mHandlerList;
         List<Action> mWorkThreadOperateList;
 
-        Thread mSendMessageThread;
-        Thread mReceiveMessageLoopThread;
         Thread mWorkThread;
+        Thread mSendMessageThread;
 
         bool mIsReleased;
+
+        int mPort;
+
+        Random mRandom;
+
+        IPEndPoint mCacheIPEndPoint;
 
         Queue<QueueInfo> mSendQueue;
         Queue<QueueInfo> mRecvQueue;
@@ -41,7 +46,6 @@ namespace Hont.UDPBoxPackage
 
         List<Func<MessageInterceptInfo, bool>> mMessageInterceptList;
 
-        public int ReceiveMsgThreadSleepTime { get; set; } = 11;
         public int SendMsgThreadSleepTime { get; set; } = 7;
 
         public uint StatisticsBadPackageCount { get; private set; }
@@ -49,6 +53,7 @@ namespace Hont.UDPBoxPackage
 
         public byte[] PackageHeadBytes { get { return mPackageHeadBytes; } }
         public event Action<byte[], IPEndPoint> OnSendMessage;
+        public event Action<Exception> OnException;
 
 
         public UDPBox()
@@ -57,30 +62,29 @@ namespace Hont.UDPBoxPackage
 
             mMessageInterceptList = new List<Func<MessageInterceptInfo, bool>>(4);
 
+            mRandom = new Random();
+
             mSendQueue = new Queue<QueueInfo>(32);
             mRecvQueue = new Queue<QueueInfo>(32);
 
             mHandlerList = new List<HandlerBase>(16);
             mWorkThreadOperateList = new List<Action>(16);
 
-            RegistHandler(new PingPongHandler());
-
-            mReceiveMessageLoopThread = new Thread(ReceiveMessageThreadLoop);
-            mReceiveMessageLoopThread.Priority = ThreadPriority.AboveNormal;
             mSendMessageThread = new Thread(SendMessageThreadLoop);
             mSendMessageThread.Priority = ThreadPriority.AboveNormal;
             mWorkThread = new Thread(WorkThreadLoop);
         }
 
-        public UDPBox(UdpClient udpClient, string packageHead)
+        public UDPBox(UdpClient[] udpClientsArray, string packageHead)
             : this()
         {
-            Initialization(udpClient, packageHead);
+            Initialization(udpClientsArray, packageHead);
+            RegistHandler(new PingPongHandler(mPackageHeadBytes));
         }
 
-        public void Initialization(UdpClient udpClient, string packageHead)
+        public void Initialization(UdpClient[] udpClientsArray, string packageHead)
         {
-            mUdpClient = udpClient;
+            mUdpClientsList = new List<UdpClient>(udpClientsArray);
             mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
         }
 
@@ -88,8 +92,14 @@ namespace Hont.UDPBoxPackage
         {
             mACKRequestProcessor.Initialization();
 
+            for (int i = 0, iMax = mUdpClientsList.Count; i < iMax; i++)
+            {
+                var udpClient = mUdpClientsList[i];
+
+                udpClient.BeginReceive(ReceiveMessageCallback, udpClient);
+            }
+
             mIsReleased = false;
-            mReceiveMessageLoopThread.Start();
             mSendMessageThread.Start();
             mWorkThread.Start();
         }
@@ -130,12 +140,15 @@ namespace Hont.UDPBoxPackage
 
         public void SendMessage(byte[] bytes, IPEndPoint endPoint)
         {
-            mSendQueue.Enqueue(new QueueInfo()
+            lock (mSendQueue)
             {
-                Content = bytes,
-                IPEndPointAddress_Str = endPoint.Address.ToString(),
-                IPEndPoint_Port = endPoint.Port,
-            });
+                mSendQueue.Enqueue(new QueueInfo()
+                {
+                    Content = bytes,
+                    IPEndPointAddress_Str = endPoint.Address.ToString(),
+                    IPEndPoint_Port = endPoint.Port,
+                });
+            }
             OnSendMessage?.Invoke(bytes, endPoint);
         }
 
@@ -146,14 +159,16 @@ namespace Hont.UDPBoxPackage
             if (mSendMessageThread.IsAlive)
                 mSendMessageThread.Abort();
 
-            if (mReceiveMessageLoopThread.IsAlive)
-                mReceiveMessageLoopThread.Abort();
-
             if (mWorkThread.IsAlive)
                 mWorkThread.Abort();
 
-            mUdpClient.Close();
-            mUdpClient.Dispose();
+            for (int i = 0, iMax = mUdpClientsList.Count; i < iMax; i++)
+            {
+                var udpClient = mUdpClientsList[i];
+
+                udpClient.Close();
+                udpClient.Dispose();
+            }
 
             mIsReleased = true;
 
@@ -166,93 +181,106 @@ namespace Hont.UDPBoxPackage
             mHandlerList.Clear();
         }
 
+        UdpClient GetRandomUDPClient()
+        {
+            return mUdpClientsList[mRandom.Next(0, mUdpClientsList.Count)];
+        }
+
         void SendMessageThreadLoop()
         {
-            var ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-            while (!mIsReleased)
+            try
             {
-                for (int i = 0; i < mSendQueue.Count; i++)
+                var ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
+
+                while (!mIsReleased)
                 {
-                    var item = mSendQueue.Dequeue();
+                    lock (mSendQueue)
+                    {
+                        for (int i = 0; i < mSendQueue.Count; i++)
+                        {
+                            var item = mSendQueue.Dequeue();
 
-                    ipEndPoint.Address = IPAddress.Parse(item.IPEndPointAddress_Str);
-                    ipEndPoint.Port = item.IPEndPoint_Port;
+                            ipEndPoint.Address = IPAddress.Parse(item.IPEndPointAddress_Str);
+                            ipEndPoint.Port = item.IPEndPoint_Port;
 
-                    mUdpClient.Send(item.Content, item.Content.Length, ipEndPoint);
+                            short type = 0;
+                            ushort magicNumber = 0;
+                            short id = 0;
+                            UDPBoxUtility.GetPackageBaseInfo(item.Content, PackageHeadBytes, out type, out magicNumber, out id);
+                            GetRandomUDPClient().Send(item.Content, item.Content.Length, ipEndPoint);
+                        }
+                    }
+
+                    Thread.Sleep(SendMsgThreadSleepTime);
                 }
-                Thread.Sleep(SendMsgThreadSleepTime);
+            }
+            catch (ThreadAbortException)
+            {
+
+            }
+            catch (Exception e)
+            {
+                OnException?.Invoke(e);
             }
         }
 
-        void ReceiveMessageThreadLoop()
+        void ReceiveMessageCallback(IAsyncResult asyncResult)
         {
-            var ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-            while (!mIsReleased)
-            {
-                try
-                {
-                    mUdpClient.BeginReceive(ReceiveCallback, ipEndPoint);
-                }
-                catch (SocketException socketException) when (socketException.ErrorCode == 10060)
-                {
-                }
-                catch (ThreadAbortException)
-                {
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.LogError(e);
-                }
-
-                Thread.Sleep(ReceiveMsgThreadSleepTime);
-            }
-        }
-
-        void ReceiveCallback(IAsyncResult asyncResult)
-        {
-            var ipEndPoint = asyncResult.AsyncState as IPEndPoint;
-            var bytes = mUdpClient.EndReceive(asyncResult, ref ipEndPoint);
+            var udpClient = asyncResult.AsyncState as UdpClient;
+            mCacheIPEndPoint = mCacheIPEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+            var bytes = udpClient.EndReceive(asyncResult, ref mCacheIPEndPoint);
 
             if (bytes != null)
             {
-                mRecvQueue.Enqueue(new QueueInfo()
+                lock (mRecvQueue)
                 {
-                    Content = bytes,
-                    IPEndPointAddress_Str = ipEndPoint.Address.ToString(),
-                    IPEndPoint_Port = ipEndPoint.Port,
-                });
+                    mRecvQueue.Enqueue(new QueueInfo()
+                    {
+                        Content = bytes,
+                        IPEndPointAddress_Str = mCacheIPEndPoint.Address.ToString(),
+                        IPEndPoint_Port = mCacheIPEndPoint.Port,
+                    });
+                }
             }
+
+            udpClient.BeginReceive(ReceiveMessageCallback, udpClient);
         }
 
         void WorkThreadLoop()
         {
-            var ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-            while (!mIsReleased)
+            try
             {
-                for (int i = 0, iMax = mWorkThreadOperateList.Count; i < iMax; i++)
+                var ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
+
+                while (!mIsReleased)
                 {
-                    mWorkThreadOperateList[i]();
+                    for (int i = 0, iMax = mWorkThreadOperateList.Count; i < iMax; i++)
+                    {
+                        mWorkThreadOperateList[i]();
+                    }
+
+                    lock (mRecvQueue)
+                    {
+                        for (int i = 0; i < mRecvQueue.Count; i++)
+                        {
+                            var item = mRecvQueue.Dequeue();
+
+                            ipEndPoint.Address = IPAddress.Parse(item.IPEndPointAddress_Str);
+                            ipEndPoint.Port = item.IPEndPoint_Port;
+
+                            ProcessPackage(item.Content, ipEndPoint);
+                        }
+                    }
+
+                    Thread.Sleep(1);
                 }
-
-                var stopwatch = new System.Diagnostics.Stopwatch();
-                stopwatch.Start();
-
-                for (int i = 0; i < mRecvQueue.Count; i++)
-                {
-                    var item = mRecvQueue.Dequeue();
-
-                    ipEndPoint.Address = IPAddress.Parse(item.IPEndPointAddress_Str);
-                    ipEndPoint.Port = item.IPEndPoint_Port;
-
-                    ProcessPackage(item.Content, ipEndPoint);
-                }
-
-                stopwatch.Stop();
-
-                Thread.Sleep(1);
+            }
+            catch (ThreadAbortException)
+            {
+            }
+            catch (Exception e)
+            {
+                OnException?.Invoke(e);
             }
         }
 

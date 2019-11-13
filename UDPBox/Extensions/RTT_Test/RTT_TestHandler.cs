@@ -13,9 +13,9 @@ namespace Hont.UDPBoxExtensions
         RTT_TestPackage mTemplate;
 
 
-        public RTT_TestHandler()
+        public RTT_TestHandler(byte[] packageHeadBytes)
         {
-            mTemplate = new RTT_TestPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new RTT_TestPackage(packageHeadBytes);
         }
 
         protected override short[] GetCacheProcessableID()
@@ -27,6 +27,8 @@ namespace Hont.UDPBoxExtensions
         {
             mTemplate.Deserialize(packageBytes);
 
+            UnityEngine.Debug.Log("mTemplate.Op: " + mTemplate.Op);
+
             switch (mTemplate.Op)
             {
                 case RTT_TestPackage.EOp.A:
@@ -37,7 +39,7 @@ namespace Hont.UDPBoxExtensions
 
                     break;
                 case RTT_TestPackage.EOp.B:
-                    Debug.Log("RTT: " + ((mTemplate.BTime - mTemplate.ATime) / (float)TimeSpan.TicksPerMillisecond) + " ms");
+                    Debug.LogError("RTT: " + ((mTemplate.BTime - mTemplate.ATime) / (float)TimeSpan.TicksPerMillisecond) + " ms" + "   ipEndPoint: " + ipEndPoint);
                     break;
                 default:
                     break;

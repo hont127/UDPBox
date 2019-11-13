@@ -31,7 +31,7 @@ namespace Hont.UDPBoxExtensions
         {
             yield return new WaitUntil(() => udpBoxContainer.State != UDPBoxContainer.EState.NoStart);
 
-            mHandler = new ResourcesInstanceHandler(udpBoxContainer.GetNativeContainer());
+            mHandler = new ResourcesInstanceHandler(udpBoxContainer.GetNativeContainer(), udpBoxContainer.PackageHeadBytes);
 
             udpBoxContainer.UDPBox.RegistHandler(mHandler);
         }

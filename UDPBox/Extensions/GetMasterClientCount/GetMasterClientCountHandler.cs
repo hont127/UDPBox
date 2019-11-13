@@ -19,7 +19,7 @@ namespace Hont.UDPBoxExtensions
         public GetMasterClientCountHandler(UDPBoxContainer udpBoxContainer)
         {
             mUdpBoxContainer = udpBoxContainer;
-            mTemplate = new GetMasterClientCountPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new GetMasterClientCountPackage(udpBoxContainer.PackageHeadBytes);
         }
 
         protected override short[] GetCacheProcessableID()
@@ -44,8 +44,6 @@ namespace Hont.UDPBoxExtensions
                 default:
                     break;
             }
-
-
         }
     }
 }

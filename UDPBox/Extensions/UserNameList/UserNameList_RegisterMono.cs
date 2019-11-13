@@ -34,7 +34,7 @@ namespace Hont.UDPBoxExtensions
             {
                 var item = userNameList[i];
 
-                GUILayout.Box("index: " + i + " item.IPAddress: " + item.IPAddress + " port: " + item.Port + " name: " + item.UserName);
+                GUILayout.Box("index: " + i + " item.IPAddress: " + item.IPAddress + " beginPort: " + item.BeginPort + " endPort: " + item.EndPort + " name: " + item.UserName);
             }
         }
 
@@ -42,7 +42,7 @@ namespace Hont.UDPBoxExtensions
         {
             yield return new WaitUntil(() => udpBoxContainer.State != UDPBoxContainer.EState.NoStart);
 
-            mHandler = new UserNameListHandler(udpBoxContainer.GetNativeContainer());
+            mHandler = new UserNameListHandler(udpBoxContainer.PackageHeadBytes, udpBoxContainer.GetNativeContainer());
             mHandler.SelfUserName = selfUserName;
             userNameList = mHandler.UserNameInfoList;
 

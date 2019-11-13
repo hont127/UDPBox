@@ -28,7 +28,7 @@ namespace Hont.UDPBoxExtensions
         {
             yield return new WaitUntil(() => udpBoxContainer.State != UDPBoxContainer.EState.NoStart);
 
-            mHandler = new SyncTransformsHandler() { transformsList = transformsList };
+            mHandler = new SyncTransformsHandler(udpBoxContainer.PackageHeadBytes) { transformsList = transformsList };
 
             udpBoxContainer.UDPBox.RegistHandler(mHandler);
         }

@@ -13,10 +13,10 @@ namespace Hont.UDPBoxExtensions
         SyncTransformsPackage mTemplate;
 
 
-        public SyncTransformsHandler()
+        public SyncTransformsHandler(byte[] packageHeadBytes)
         {
             transformsList = new List<SyncTransforms_TransformMono>(8);
-            mTemplate = new SyncTransformsPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new SyncTransformsPackage(packageHeadBytes);
         }
 
         protected override short[] GetCacheProcessableID()
@@ -81,7 +81,7 @@ namespace Hont.UDPBoxExtensions
         {
             UDPBox_GameThreadMediator.Instance?.EnqueueToUpdateQueue(() =>
             {
-                var package = new SyncTransformsPackage(UDPBoxUtility.DefaultHeadBytes);
+                var package = new SyncTransformsPackage(mTemplate.HeadBytes);
                 package.Op = SyncTransformsPackage.EOperate.Push;
 
                 for (int i = 0, iMax = transformsList.Count; i < iMax; i++)

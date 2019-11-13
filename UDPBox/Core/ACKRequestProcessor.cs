@@ -32,7 +32,7 @@ namespace Hont.UDPBoxPackage
         UDPBox mUdpBox;
         ACKPackage mACKPackageTemplate;
         List<WaitACKInfo> mWaitACKInfoList;
-        Queue<PackageCompareInfo> mMagicNumberMarkQueue;
+        List<PackageCompareInfo> mPackageInterceptMarkList;
 
         long mLastTick;
 
@@ -40,7 +40,7 @@ namespace Hont.UDPBoxPackage
         public ACKRequestProcessor(UDPBox udpBox, float ackDetectDelayTime = 0.3f)
         {
             mWaitACKInfoList = new List<WaitACKInfo>(32);
-            mMagicNumberMarkQueue = new Queue<PackageCompareInfo>(MAGIC_NUMBER_MARK_COUNT);
+            mPackageInterceptMarkList = new List<PackageCompareInfo>(MAGIC_NUMBER_MARK_COUNT);
 
             mUdpBox = udpBox;
             mACKDetectDelayTime = ackDetectDelayTime;
@@ -49,6 +49,7 @@ namespace Hont.UDPBoxPackage
         public void Initialization()
         {
             mWaitACKInfoList.Clear();
+            mPackageInterceptMarkList.Clear();
             mACKPackageTemplate = new ACKPackage(mUdpBox.PackageHeadBytes);
             mUdpBox.OnSendMessage += OnSendMessage;
             mUdpBox.RegistMessageIntercept(OnACKMessageIntercept);
@@ -110,15 +111,13 @@ namespace Hont.UDPBoxPackage
 
             //--------------------------------------------------------------------
             var flag = false;
-            lock (mMagicNumberMarkQueue)
+            foreach (var item in mPackageInterceptMarkList)
             {
-                foreach (var item in mMagicNumberMarkQueue)
+                if (item.ID == id && item.MagicNumber == magicNumber)
                 {
-                    if (item.ID == id && item.MagicNumber == magicNumber)
-                    {
-                        flag = true;
-                        break;
-                    }
+                    mPackageInterceptMarkList.Remove(item);
+                    flag = true;
+                    break;
                 }
             }
             if (flag) return true;
@@ -126,12 +125,9 @@ namespace Hont.UDPBoxPackage
 
             if (type == (short)EPackageType.Need_Ack_Session)//Received generic ack package.
             {
-                lock (mMagicNumberMarkQueue)
-                {
-                    if (mMagicNumberMarkQueue.Count > MAGIC_NUMBER_MARK_COUNT)
-                        mMagicNumberMarkQueue.Dequeue();
-                    mMagicNumberMarkQueue.Enqueue(new PackageCompareInfo() { ID = id, MagicNumber = magicNumber });
-                }
+                if (mPackageInterceptMarkList.Count > MAGIC_NUMBER_MARK_COUNT)
+                    mPackageInterceptMarkList.RemoveAt(0);
+                mPackageInterceptMarkList.Add(new PackageCompareInfo() { ID = id, MagicNumber = magicNumber });
 
                 mACKPackageTemplate.ACK_ID = id;
                 mACKPackageTemplate.ACK_MagicNumber = magicNumber;
@@ -144,17 +140,14 @@ namespace Hont.UDPBoxPackage
                 var ack_id = mACKPackageTemplate.ACK_ID;
                 var ack_MagicNumber = mACKPackageTemplate.ACK_MagicNumber;
 
-                lock (mWaitACKInfoList)
+                for (int i = mWaitACKInfoList.Count - 1; i >= 0; i--)
                 {
-                    for (int i = mWaitACKInfoList.Count - 1; i >= 0; i--)
-                    {
-                        var item = mWaitACKInfoList[i];
+                    var item = mWaitACKInfoList[i];
 
-                        if (item.MagicNumber == ack_MagicNumber && item.PackageID == ack_id)
-                        {
-                            mWaitACKInfoList.RemoveAt(i);
-                            break;
-                        }
+                    if (item.MagicNumber == ack_MagicNumber && item.PackageID == ack_id)
+                    {
+                        mWaitACKInfoList.RemoveAt(i);
+                        break;
                     }
                 }
 
@@ -166,29 +159,25 @@ namespace Hont.UDPBoxPackage
 
         void ACKWaitPackageLogicUpdate()
         {
-            lock (mWaitACKInfoList)
+            var deltaTime = UDPBoxUtility.GetDeltaTime(mLastTick);
+            for (int i = 0, iMax = mWaitACKInfoList.Count; i < iMax; i++)
             {
-                var deltaTime = UDPBoxUtility.GetDeltaTime(mLastTick);
+                var item = mWaitACKInfoList[i];
 
-                for (int i = 0, iMax = mWaitACKInfoList.Count; i < iMax; i++)
+                if (item.Timer <= 0f)
                 {
-                    var item = mWaitACKInfoList[i];
-
-                    if (item.Timer <= 0f)
-                    {
-                        mUdpBox.SendMessage(item.Bytes, new IPEndPoint(IPAddress.Parse(item.IPEndPoint_IPAddress), item.IPEndPoint_Port));
-                        item.Timer = mACKDetectDelayTime;
-                    }
-                    else
-                    {
-                        item.Timer -= deltaTime;
-                    }
-
-                    mWaitACKInfoList[i] = item;
+                    mUdpBox.SendMessage(item.Bytes, new IPEndPoint(IPAddress.Parse(item.IPEndPoint_IPAddress), item.IPEndPoint_Port));
+                    item.Timer = mACKDetectDelayTime;
+                }
+                else
+                {
+                    item.Timer -= deltaTime;
                 }
 
-                mLastTick = DateTime.Now.Ticks;
+                mWaitACKInfoList[i] = item;
             }
+
+            mLastTick = DateTime.Now.Ticks;
         }
     }
 }

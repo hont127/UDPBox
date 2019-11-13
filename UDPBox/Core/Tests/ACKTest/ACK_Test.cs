@@ -13,10 +13,10 @@ namespace Hont.UDPBoxPackage
 
         void OnEnable()
         {
-            var udpClient1 = UDPBoxUtility.GeterateUdpClient(1234);
-            mUDPBox1 = new UDPBox(udpClient1, UDPBoxUtility.DefaultHead);
-            var udpClient2 = UDPBoxUtility.GeterateUdpClient(1235);
-            mUDPBox2 = new UDPBox(udpClient2, UDPBoxUtility.DefaultHead);
+            var udpClients1 = UDPBoxUtility.GeterateUdpClientsArray(1234, 1235);
+            mUDPBox1 = new UDPBox(udpClients1, UDPBoxUtility.DefaultHead);
+            var udpClients2 = UDPBoxUtility.GeterateUdpClientsArray(1235, 1236);
+            mUDPBox2 = new UDPBox(udpClients2, UDPBoxUtility.DefaultHead);
         }
 
         void OnDisable()

@@ -16,7 +16,7 @@ namespace Hont.UDPBoxExtensions
         {
             if (GUILayout.Button("Send"))
             {
-                container.SendUDPMessage(new GetMasterClientCountPackage(UDPBoxUtility.DefaultHeadBytes).Serialize()
+                container.SendUDPMessage(new GetMasterClientCountPackage(container.PackageHeadBytes).Serialize()
                     , container.MasterIPConnectInfo.IPEndPoint);
             }
         }

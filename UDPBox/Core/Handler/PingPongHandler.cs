@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Text;
 
@@ -11,9 +10,9 @@ namespace Hont.UDPBoxPackage
         PingPongPackage mTemplate;
 
 
-        public PingPongHandler()
+        public PingPongHandler(byte[] packageHead)
         {
-            mTemplate = new PingPongPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new PingPongPackage(packageHead);
         }
 
         protected override short[] GetCacheProcessableID()

@@ -13,7 +13,8 @@ namespace Hont.UDPBoxExtensions
     {
         public bool isDebug;
 
-        public int udpBoxPort = 1236;
+        public int udpBoxBeginPort = 1236;
+        public int udpBoxEndPort = 1237;
         public int sendMsgThreadSleepTime_MS = 35;
         public int recvMsgThreadSleepTime_MS = 32;
 
@@ -50,8 +51,8 @@ namespace Hont.UDPBoxExtensions
         {
             UDPBox_GameThreadMediator.Instance.GetHashCode();
 
-            var udpClient = UDPBoxUtility.GeterateUdpClient(udpBoxPort);
-            mUDPBox.Initialization(udpClient, UDPBoxUtility.DefaultHead);
+            var udpClientsArray = UDPBoxUtility.GeterateUdpClientsArray(udpBoxBeginPort, udpBoxEndPort);
+            mUDPBox.Initialization(udpClientsArray, UDPBoxUtility.DefaultHead);
             mUDPBox.Start();
         }
 

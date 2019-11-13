@@ -3,8 +3,9 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Hont.UDPBoxPackage;
 
-namespace Hont.UDPBoxPackage
+namespace Hont.UDPBoxExtensions
 {
     public class PackageArgument_TransformList : PackageArgument
     {
@@ -25,7 +26,7 @@ namespace Hont.UDPBoxPackage
         public List<TransformInfo> Value { get; set; }
 
 
-        public PackageArgument_TransformList(int capacity = 12)
+        public PackageArgument_TransformList(int capacity = 16)
         {
             Value = new List<TransformInfo>(capacity);
         }

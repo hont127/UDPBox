@@ -15,11 +15,11 @@ namespace Hont.UDPBoxExtensions
         Action<string, string> mOnProcessResponse;
 
 
-        public RequestStringHandler(Func<string, string> onProcessRequest, Action<string, string> onProcessResponse)
+        public RequestStringHandler(byte[] packageHeadBytes, Func<string, string> onProcessRequest, Action<string, string> onProcessResponse)
         {
             mOnProcessRequest = onProcessRequest;
             mOnProcessResponse = onProcessResponse;
-            mTemplate = new RequestStringPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new RequestStringPackage(packageHeadBytes);
         }
 
         protected override short[] GetCacheProcessableID()

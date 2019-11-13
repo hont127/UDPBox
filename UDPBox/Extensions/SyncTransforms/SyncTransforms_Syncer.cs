@@ -15,7 +15,7 @@ namespace Hont.UDPBoxExtensions
 
         IEnumerator Start()
         {
-            mPackageTemplate = new SyncTransformsPackage(UDPBoxUtility.DefaultHeadBytes);
+            mPackageTemplate = new SyncTransformsPackage(udpBox.PackageHeadBytes);
             var waitForSecond = new WaitForSeconds(delay);
 
             while (true)

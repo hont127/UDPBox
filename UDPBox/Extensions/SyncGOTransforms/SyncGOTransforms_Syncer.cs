@@ -15,7 +15,7 @@ namespace Hont.UDPBoxExtensions
 
         IEnumerator Start()
         {
-            mPackageTemplate = new SyncGOTransformsPackage(UDPBoxUtility.DefaultHeadBytes);
+            mPackageTemplate = new SyncGOTransformsPackage(udpBox.PackageHeadBytes);
             var waitForSecond = new WaitForSeconds(delay);
 
             while (true)
@@ -34,13 +34,13 @@ namespace Hont.UDPBoxExtensions
                         var client = udpBox.ClientIPConnectInfoList[i];
 
                         mPackageTemplate.Op = SyncGOTransformsPackage.EOperate.Fetch;
-                        udpBox.UDPBox.SendMessage(mPackageTemplate.Serialize(), client.IPEndPoint);
+                        udpBox.SendUDPMessageWithRandomPort(mPackageTemplate.Serialize(), client);
                     }
                 }
                 else
                 {
                     mPackageTemplate.Op = SyncGOTransformsPackage.EOperate.FetchAll;
-                    udpBox.UDPBox.SendMessage(mPackageTemplate.Serialize(), udpBox.MasterIPConnectInfo);
+                    udpBox.SendUDPMessageWithRandomPort(mPackageTemplate.Serialize(), udpBox.MasterIPConnectInfo);
                 }
 
                 yield return waitForSecond;

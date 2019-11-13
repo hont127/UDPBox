@@ -13,14 +13,16 @@ namespace Hont.UDPBoxExtensions
         ResourcesInstancePackage mTemplate;
 
 
-        public ResourcesInstanceHandler(UDPBoxContainer container)
+        public ResourcesInstanceHandler(UDPBoxContainer container, byte[] headBytes)
         {
             mUdpBoxContainer = container;
-            mTemplate = new ResourcesInstancePackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new ResourcesInstancePackage(headBytes);
         }
 
         public void SendUDPBoxBroadcastMessage(string resourcesPath, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation)
         {
+            if (mUdpBoxContainer.State == UDPBoxContainer.EState.NoClients || mUdpBoxContainer.State == UDPBoxContainer.EState.NoServer) return;
+
             if (mUdpBoxContainer.IsMaster)
             {
                 mTemplate.Op = ResourcesInstancePackage.EOperate.ApplyEffect;
@@ -43,8 +45,6 @@ namespace Hont.UDPBoxExtensions
 
         public override void Process(UDPBox udpBox, byte[] packageBytes, IPEndPoint ipEndPoint)
         {
-            UnityEngine.Debug.Log("RECV ipEndPoint: " + ipEndPoint + " mTemplate.Op: " + mTemplate.Op);
-
             mTemplate.Deserialize(packageBytes);
 
             switch (mTemplate.Op)

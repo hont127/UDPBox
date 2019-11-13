@@ -15,7 +15,7 @@ namespace Hont.UDPBoxExtensions
 
         void OnEnable()
         {
-            mHandler = new RTT_TestHandler();
+            mHandler = new RTT_TestHandler(udpBoxContainer.PackageHeadBytes);
 
             udpBoxContainer.UDPBox.RegistHandler(mHandler);
         }

@@ -17,9 +17,9 @@ namespace Hont.UDPBoxExtensions
         public event Action<int, string> OnStateChanged;
 
 
-        public LevelStateChangedHandler()
+        public LevelStateChangedHandler(byte[] packageHead)
         {
-            mTemplate = new LevelStateChangedPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new LevelStateChangedPackage(packageHead);
         }
 
         protected override short[] GetCacheProcessableID()

@@ -123,7 +123,6 @@ GameObject:
   - component: {fileID: 467312792}
   - component: {fileID: 467312791}
   - component: {fileID: 467312790}
-  - component: {fileID: 467312789}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -131,18 +130,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &467312789
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 467312788}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 704e87407a0e0014cb7d490322ea002d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  udpBoxContainer: {fileID: 995071311}
 --- !u!81 &467312790
 AudioListener:
   m_ObjectHideFlags: 0
@@ -213,7 +200,7 @@ GameObject:
   - component: {fileID: 749562172}
   - component: {fileID: 749562173}
   m_Layer: 0
-  m_Name: RTT_Test
+  m_Name: RequestStringHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -240,10 +227,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 749562171}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b281bf646917fb946b31ff09aae801e7, type: 3}
+  m_Script: {fileID: 11500000, guid: 07fcbb78a3c21584bbdab72bcda5372b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   udpBoxContainer: {fileID: 893708868}
+  udpBoxPureContainer: {fileID: 0}
 --- !u!1 &893708867
 GameObject:
   m_ObjectHideFlags: 0
@@ -275,7 +263,8 @@ MonoBehaviour:
   isDebug: 1
   broadcastSendPort: 1235
   broadcastListenPort: 1234
-  udpBoxPort: 1236
+  udpBoxBeginPort: 1240
+  udpBoxEndPort: 1250
   broadcastNetprefixIP: 127.0.0.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35
@@ -325,7 +314,8 @@ MonoBehaviour:
   isDebug: 0
   broadcastSendPort: 1234
   broadcastListenPort: 1235
-  udpBoxPort: 1237
+  udpBoxBeginPort: 1250
+  udpBoxEndPort: 1260
   broadcastNetprefixIP: 127.0.0.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35
@@ -344,6 +334,49 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1370154513
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1370154514}
+  - component: {fileID: 1370154515}
+  m_Layer: 0
+  m_Name: RequestString_Test_Script
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1370154514
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1370154513}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1370154515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1370154513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abf3d4f8fe837194abbd017004fb383a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  udpboxContainer: {fileID: 893708868}
+  udpBoxPureContainer: {fileID: 0}
+  requestString: {fileID: 749562173}
 --- !u!1 &1532876613
 GameObject:
   m_ObjectHideFlags: 0
@@ -420,7 +453,7 @@ GameObject:
   - component: {fileID: 1776543053}
   - component: {fileID: 1776543054}
   m_Layer: 0
-  m_Name: RTT_Test
+  m_Name: RequestStringHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -447,7 +480,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 1776543052}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b281bf646917fb946b31ff09aae801e7, type: 3}
+  m_Script: {fileID: 11500000, guid: 07fcbb78a3c21584bbdab72bcda5372b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   udpBoxContainer: {fileID: 995071311}
+  udpBoxPureContainer: {fileID: 0}

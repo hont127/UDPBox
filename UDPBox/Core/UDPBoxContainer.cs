@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Hont.UDPBoxPackage
 {
@@ -19,10 +17,32 @@ namespace Hont.UDPBoxPackage
         public struct ConnectInfo
         {
             public IPEndPoint IPEndPoint { get; set; }
+            public int BeginPort { get; set; }
+            public int EndPort { get; set; }
             public float AliveTimer { get; set; }
             public bool IsClientEstablished { get; set; }
 
             public bool Valid { get { return IPEndPoint != null; } }
+
+
+            public bool IsPortAndIPContain(IPEndPoint compare)
+            {
+                var flag = compare.Address.Equals(IPEndPoint.Address);
+                flag &= compare.Port >= BeginPort;
+                flag &= compare.Port < EndPort;
+
+                return flag;
+            }
+
+            public void UpdateToRandomPort(Random random)
+            {
+                IPEndPoint.Port = random.Next(BeginPort, EndPort);
+            }
+
+            public override string ToString()
+            {
+                return (!Valid) ? "INVALID" : $"IPEndPoint:{IPEndPoint},BeginPort:{BeginPort},EndPort:{EndPort},AliveTimer:{AliveTimer}";
+            }
         }
 
         public enum EState { NoStart, NoClients, HasClients, NoServer, HasServer, Released }
@@ -37,6 +57,8 @@ namespace Hont.UDPBoxPackage
         PingPongPackage mPingPongPackageTemplate;
         EstablishServerConnectPackage mEstablishServerConnectPackage;
 
+        Random mRandom;
+
         public EState State { get; private set; }
         public IPAddress SelfIPAddress { get; private set; }
         public ConnectInfo MasterIPConnectInfo { get; private set; }
@@ -47,13 +69,9 @@ namespace Hont.UDPBoxPackage
 
         public int BroadcastListenPort { get; set; } = 1234;
         public int BroadcastSendPort { get; set; } = 1235;
-        public int UdpBoxPort { get; set; } = 1236;
+        public int UdpBoxBeginPort { get; set; } = 1240;
+        public int UdpBoxEndPort { get; set; } = 1250;
 
-        public int ReceiveMsgThreadSleepTime
-        {
-            get { return UDPBox.ReceiveMsgThreadSleepTime; }
-            set { UDPBox.ReceiveMsgThreadSleepTime = value; }
-        }
         public int SendMsgThreadSleepTime
         {
             get { return UDPBox.SendMsgThreadSleepTime; }
@@ -73,16 +91,30 @@ namespace Hont.UDPBoxPackage
         public event Action OnMasterIPTimeOut;
         public event Action<IPEndPoint> OnClientTimeOut;
 
+        public event Action<Exception> OnException
+        {
+            add { UDPBox.OnException += value; }
+            remove { UDPBox.OnException -= value; }
+        }
+
 
         public UDPBoxContainer()
         {
             State = EState.NoStart;
+            mRandom = new System.Random();
+            UDPBox = new UDPBox();
         }
 
-        public void Initialization()
+        public void Initialization(string packageHead)
         {
-            var udpClient = UDPBoxUtility.GeterateUdpClient(UdpBoxPort);
-            UDPBox = new UDPBox(udpClient, UDPBoxUtility.DefaultHead);
+            var udpClientArray = new UdpClient[UdpBoxEndPort - UdpBoxBeginPort];
+            for (int i = 0, port = UdpBoxBeginPort; port < UdpBoxEndPort; i++, port++)
+            {
+                udpClientArray[i] = UDPBoxUtility.GeterateUdpClient(port);
+            }
+
+            UDPBox.Initialization(udpClientArray, packageHead);
+
             mBroadcastPackageTemplate = new BroadcastPackage(PackageHeadBytes);
             mPingPongPackageTemplate = new PingPongPackage(PackageHeadBytes);
             mEstablishServerConnectPackage = new EstablishServerConnectPackage(PackageHeadBytes);
@@ -104,30 +136,29 @@ namespace Hont.UDPBoxPackage
                 if (!mBroadcastPackageTemplate.Deserialize(bytes)) return;
                 if (mBroadcastPackageTemplate.ProjectPrefix != Proj_Prefix) return;
 
-                var ipEndPoint = new IPEndPoint(IPAddress.Parse(mBroadcastPackageTemplate.IpAddress), mBroadcastPackageTemplate.Port);
-
-                if (ipEndPoint.Address.Equals(SelfIPAddress) && ipEndPoint.Port == UdpBoxPort) return;
+                var ipEndPoint = new IPEndPoint(IPAddress.Parse(mBroadcastPackageTemplate.IpAddress), mBroadcastPackageTemplate.BeginPort);
+                if (ipEndPoint.Address.Equals(SelfIPAddress)
+                    && ipEndPoint.Port < UdpBoxEndPort && ipEndPoint.Port >= UdpBoxBeginPort) return;
+                //Provoid self connect to the self.
 
                 if (isMaster)
                 {
-                    if (ClientIPConnectList.Count < MAX_CLIENT && !ClientIPConnectList.Find(m => m.IPEndPoint.Equals(ipEndPoint)).Valid)
+                    if (ClientIPConnectList.Count < MAX_CLIENT
+                        && !ClientIPConnectList.Find(m => m.IsPortAndIPContain(ipEndPoint)).Valid)
                     {
-                        ClientIPConnectList.Add(new ConnectInfo() { IPEndPoint = ipEndPoint });
+                        ClientIPConnectList.Add(new ConnectInfo()
+                        {
+                            IPEndPoint = ipEndPoint,
+                            BeginPort = mBroadcastPackageTemplate.BeginPort,
+                            EndPort = mBroadcastPackageTemplate.EndPort,
+                        });
+
                         mEstablishServerConnectPackage.IpAddress = SelfIPAddress.ToString();
-                        mEstablishServerConnectPackage.Port = UdpBoxPort;
+                        mEstablishServerConnectPackage.BeginPort = UdpBoxBeginPort;
+                        mEstablishServerConnectPackage.EndPort = UdpBoxEndPort;
                         UDPBox.SendMessage(mEstablishServerConnectPackage.Serialize(), ipEndPoint);
 
                         OnConnectedClient?.Invoke(ipEndPoint);
-                    }
-                }
-                else
-                {
-                    if (!MasterIPConnectInfo.Valid)
-                    {
-                        Debug.LogError("Init!!!! self ip" + SelfIPAddress + " ipEndPoint.Address : " + ipEndPoint.Address + " self port: " + ipEndPoint.Port + " udpbox port: " + UdpBoxPort);
-                        MasterIPConnectInfo = new ConnectInfo() { IPEndPoint = ipEndPoint };
-
-                        OnConnectedMaster?.Invoke();
                     }
                 }
             });
@@ -136,7 +167,8 @@ namespace Hont.UDPBoxPackage
             {
                 mBroadcastPackageTemplate.ProjectPrefix = Proj_Prefix;
                 mBroadcastPackageTemplate.IpAddress = SelfIPAddress.ToString();
-                mBroadcastPackageTemplate.Port = UdpBoxPort;
+                mBroadcastPackageTemplate.BeginPort = UdpBoxBeginPort;
+                mBroadcastPackageTemplate.EndPort = UdpBoxEndPort;
 
                 mUDPBoxBroadcast.StartBroadcast(mBroadcastPackageTemplate.Serialize(), BroadcastNetPrefixIP);
             }
@@ -155,6 +187,12 @@ namespace Hont.UDPBoxPackage
             UDPBox.UnregistWorkThreadOperate(RefreshConnectStateInWorkThread);
             mUDPBoxBroadcast?.ReleaseThread();
             UDPBox.Dispose();
+        }
+
+        public void SendUDPMessageWithRandomPort(byte[] bytes, ConnectInfo connectInfo)
+        {
+            UpdateConnectInfoToRandomPort(connectInfo);
+            SendUDPMessage(bytes, connectInfo.IPEndPoint);
         }
 
         public void SendUDPMessage(byte[] bytes, IPEndPoint ipEndPoint)
@@ -182,116 +220,131 @@ namespace Hont.UDPBoxPackage
             UDPBox.UnregistWorkThreadOperate(operateAction);
         }
 
+        public int GetRandomUDPBoxPort()
+        {
+            return mRandom.Next(UdpBoxBeginPort, UdpBoxEndPort);
+        }
+
+        public ConnectInfo UpdateConnectInfoToRandomPort(ConnectInfo connectInfo)
+        {
+            connectInfo.UpdateToRandomPort(mRandom);
+
+            return connectInfo;
+        }
+
         void RefreshConnectStateInWorkThread()
         {
             var deltaTime = UDPBoxUtility.GetDeltaTime(mLastWorkThreadTime);
 
-            lock (this)
+            if (IsMaster)
             {
+                if (ClientIPConnectList.Count > 0)
+                    State = EState.HasClients;
+                else
+                    State = EState.NoClients;
+
+                for (int i = 0, iMax = ClientIPConnectList.Count; i < iMax; i++)
+                {
+                    var item = ClientIPConnectList[i];
+
+                    if (!item.Valid) continue;
+
+                    item = new ConnectInfo()
+                    {
+                        AliveTimer = item.AliveTimer + deltaTime,
+                        IPEndPoint = item.IPEndPoint,
+                        BeginPort = item.BeginPort,
+                        EndPort = item.EndPort,
+                        IsClientEstablished = item.IsClientEstablished,
+                    };
+
+                    ClientIPConnectList[i] = item;
+                }
+            }
+            else
+            {
+                if (MasterIPConnectInfo.Valid)
+                {
+                    State = EState.HasServer;
+
+                    MasterIPConnectInfo = new ConnectInfo()
+                    {
+                        AliveTimer = MasterIPConnectInfo.AliveTimer + deltaTime,
+                        IPEndPoint = MasterIPConnectInfo.IPEndPoint,
+                        BeginPort = MasterIPConnectInfo.BeginPort,
+                        EndPort = MasterIPConnectInfo.EndPort,
+                        IsClientEstablished = MasterIPConnectInfo.IsClientEstablished,
+                    };
+                }
+                else
+                {
+                    State = EState.NoServer;
+                }
+            }
+            //update ticks.
+
+            if (IsMaster)
+            {
+                for (int i = ClientIPConnectList.Count - 1; i >= 0; i--)
+                {
+                    var item = ClientIPConnectList[i];
+
+                    if (!item.Valid) continue;
+
+                    if (!item.IsClientEstablished && item.AliveTimer > TIME_OUT_NOT_ESTABLISH_CONNECT_FLOAT)
+                    {
+                        ClientIPConnectList.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (item.AliveTimer <= TIME_OUT_CONNECT_FLOAT) continue;
+
+                    ClientIPConnectList.RemoveAt(i);
+                    OnClientTimeOut?.Invoke(item.IPEndPoint);
+                }
+            }
+            else
+            {
+                if (MasterIPConnectInfo.Valid)
+                {
+                    if (MasterIPConnectInfo.AliveTimer > TIME_OUT_CONNECT_FLOAT)
+                    {
+                        MasterIPConnectInfo = new ConnectInfo();
+                        OnMasterIPTimeOut?.Invoke();
+                    }
+                }
+            }
+            //update timeout.
+
+            if (mPingTargetThreadTimer <= 0f)
+            {
+                mPingPongPackageTemplate.PingPong = PingPongPackage.EPingPong.Ping;
+
                 if (IsMaster)
                 {
-                    if (ClientIPConnectList.Count > 0)
-                        State = EState.HasClients;
-                    else
-                        State = EState.NoClients;
-
                     for (int i = 0, iMax = ClientIPConnectList.Count; i < iMax; i++)
                     {
                         var item = ClientIPConnectList[i];
-
-                        if (!item.Valid) continue;
-
-                        item = new ConnectInfo()
+                        if (item.Valid && item.IsClientEstablished)
                         {
-                            AliveTimer = item.AliveTimer + deltaTime,
-                            IPEndPoint = item.IPEndPoint,
-                            IsClientEstablished = item.IsClientEstablished,
-                        };
-
-                        ClientIPConnectList[i] = item;
+                            SendUDPMessageWithRandomPort(mPingPongPackageTemplate.Serialize(), item);
+                        }
                     }
                 }
                 else
                 {
                     if (MasterIPConnectInfo.Valid)
                     {
-                        State = EState.HasServer;
-
-                        MasterIPConnectInfo = new ConnectInfo()
-                        {
-                            AliveTimer = MasterIPConnectInfo.AliveTimer + deltaTime,
-                            IPEndPoint = MasterIPConnectInfo.IPEndPoint,
-                            IsClientEstablished = MasterIPConnectInfo.IsClientEstablished,
-                        };
-                    }
-                    else
-                    {
-                        State = EState.NoServer;
+                        SendUDPMessageWithRandomPort(mPingPongPackageTemplate.Serialize(), MasterIPConnectInfo);
                     }
                 }
-                //update ticks.
 
-                if (IsMaster)
-                {
-                    for (int i = ClientIPConnectList.Count - 1; i >= 0; i--)
-                    {
-                        var item = ClientIPConnectList[i];
-
-                        if (!item.Valid) continue;
-
-                        if (!item.IsClientEstablished && item.AliveTimer > TIME_OUT_NOT_ESTABLISH_CONNECT_FLOAT)
-                        {
-                            ClientIPConnectList.RemoveAt(i);
-                            continue;
-                        }
-
-                        if (item.AliveTimer <= TIME_OUT_CONNECT_FLOAT) continue;
-
-                        ClientIPConnectList.RemoveAt(i);
-
-                        if (item.AliveTimer > TIME_OUT_CONNECT_FLOAT)
-                            OnClientTimeOut?.Invoke(item.IPEndPoint);
-                    }
-                }
-                else
-                {
-                    if (MasterIPConnectInfo.Valid)
-                    {
-                        if (MasterIPConnectInfo.AliveTimer > TIME_OUT_CONNECT_FLOAT)
-                        {
-                            MasterIPConnectInfo = new ConnectInfo();
-                            OnMasterIPTimeOut?.Invoke();
-                        }
-                    }
-                }
-                //update timeout.
-
-                if (mPingTargetThreadTimer <= 0f)
-                {
-                    mPingPongPackageTemplate.PingPong = PingPongPackage.EPingPong.Ping;
-
-                    if (IsMaster)
-                    {
-                        for (int i = 0, iMax = ClientIPConnectList.Count; i < iMax; i++)
-                        {
-                            var item = ClientIPConnectList[i];
-                            if (item.Valid && item.IsClientEstablished)
-                                UDPBox.SendMessage(mPingPongPackageTemplate.Serialize(), item.IPEndPoint);
-                        }
-                    }
-                    else
-                    {
-                        if (MasterIPConnectInfo.Valid)
-                            UDPBox.SendMessage(mPingPongPackageTemplate.Serialize(), MasterIPConnectInfo.IPEndPoint);
-                    }
-
-                    mPingTargetThreadTimer = PING_CONNECT_TIME_FLOAT;
-                }
-                else
-                {
-                    mPingTargetThreadTimer -= deltaTime;
-                }//ping connect.
+                mPingTargetThreadTimer = PING_CONNECT_TIME_FLOAT;
             }
+            else
+            {
+                mPingTargetThreadTimer -= deltaTime;
+            }//ping connect.
 
             mLastWorkThreadTime = DateTime.Now.Ticks;
         }
@@ -307,14 +360,18 @@ namespace Hont.UDPBoxPackage
                 if (!mEstablishServerConnectPackage.Deserialize(messageInterceptInfo.Bytes)) return true;
 
                 var establishIPAddress = mEstablishServerConnectPackage.IpAddress;
-                var establishPort = mEstablishServerConnectPackage.Port;
+                var serverBeginPort = mEstablishServerConnectPackage.BeginPort;
+                var serverEndPort = mEstablishServerConnectPackage.EndPort;
 
                 if (!IsMaster)
                 {
                     MasterIPConnectInfo = new ConnectInfo()
                     {
-                        IPEndPoint = new IPEndPoint(IPAddress.Parse(establishIPAddress), establishPort)
+                        IPEndPoint = new IPEndPoint(IPAddress.Parse(establishIPAddress), serverBeginPort),
+                        BeginPort = serverBeginPort,
+                        EndPort = serverEndPort,
                     };
+                    OnConnectedMaster?.Invoke();
                 }
             }
             else if (packageID == UDPBoxUtility.PING_PONG_ID)
@@ -322,25 +379,36 @@ namespace Hont.UDPBoxPackage
                 if (!mPingPongPackageTemplate.Deserialize(messageInterceptInfo.Bytes)) return true;
                 if (mPingPongPackageTemplate.PingPong == PingPongPackage.EPingPong.Pong) return true;
 
-                lock (this)
+                if (IsMaster)
                 {
-                    if (IsMaster)
+                    for (int i = 0, iMax = ClientIPConnectList.Count; i < iMax; i++)
                     {
-                        for (int i = 0, iMax = ClientIPConnectList.Count; i < iMax; i++)
+                        var clientEndPoint = ClientIPConnectList[i];
+
+                        if (clientEndPoint.IsPortAndIPContain(messageInterceptInfo.IPEndPoint))
                         {
-                            var clientEndPoint = ClientIPConnectList[i];
-                            if (clientEndPoint.IPEndPoint.Equals(messageInterceptInfo.IPEndPoint))
+                            ClientIPConnectList[i] = new ConnectInfo()
                             {
-                                ClientIPConnectList[i] = new ConnectInfo() { AliveTimer = 0f, IPEndPoint = clientEndPoint.IPEndPoint, IsClientEstablished = true };
-                            }
+                                AliveTimer = 0f,
+                                IPEndPoint = clientEndPoint.IPEndPoint,
+                                BeginPort = clientEndPoint.BeginPort,
+                                EndPort = clientEndPoint.EndPort,
+                                IsClientEstablished = true
+                            };
                         }
                     }
-                    else
+                }
+                else
+                {
+                    if (MasterIPConnectInfo.Valid && MasterIPConnectInfo.IsPortAndIPContain(messageInterceptInfo.IPEndPoint))
                     {
-                        if (MasterIPConnectInfo.Valid && MasterIPConnectInfo.IPEndPoint.Equals(messageInterceptInfo.IPEndPoint))
+                        MasterIPConnectInfo = new ConnectInfo()
                         {
-                            MasterIPConnectInfo = new ConnectInfo() { AliveTimer = 0f, IPEndPoint = messageInterceptInfo.IPEndPoint };
-                        }
+                            AliveTimer = 0f,
+                            IPEndPoint = messageInterceptInfo.IPEndPoint,
+                            BeginPort = MasterIPConnectInfo.BeginPort,
+                            EndPort = MasterIPConnectInfo.EndPort,
+                        };
                     }
                 }
                 return true;

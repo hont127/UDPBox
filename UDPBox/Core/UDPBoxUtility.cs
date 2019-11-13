@@ -1,9 +1,8 @@
 ﻿using System;
+using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Hont.UDPBoxPackage
 {
@@ -189,6 +188,16 @@ namespace Hont.UDPBoxPackage
             //屏蔽目标机器没有接收逻辑时报错。
 
             return mUdpClient;
+        }
+
+        public static UdpClient[] GeterateUdpClientsArray(int beginPort, int endPort)
+        {
+            var result = new UdpClient[endPort - beginPort];
+
+            for (int i = 0; i < result.Length; i++)
+                result[i] = new UdpClient(beginPort + i);
+
+            return result;
         }
     }
 }

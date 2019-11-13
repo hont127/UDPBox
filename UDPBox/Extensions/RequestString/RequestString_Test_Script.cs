@@ -9,6 +9,7 @@ namespace Hont.UDPBoxExtensions
 {
     public class RequestString_Test_Script : MonoBehaviour
     {
+        public UDPBoxContainer_Mono udpboxContainer;
         public UDPBoxPureContainer_Mono udpBoxPureContainer;
         public RequestString_RegisterMono requestString;
         RequestStringPackage mTestPackage;
@@ -16,7 +17,8 @@ namespace Hont.UDPBoxExtensions
 
         void Awake()
         {
-            mTestPackage = new RequestStringPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTestPackage = new RequestStringPackage(udpboxContainer == null
+                ? udpBoxPureContainer.UDPBox.PackageHeadBytes : udpboxContainer.PackageHeadBytes);
 
             requestString.OnProcessRequest = (str) =>
             {
@@ -38,8 +40,17 @@ namespace Hont.UDPBoxExtensions
             {
                 mTestPackage.Op = RequestStringPackage.EOp.Request;
                 mTestPackage.Content = "hahaha";
-                udpBoxPureContainer.UDPBox.SendMessage(mTestPackage.Serialize()
-                    , new IPEndPoint(IPAddress.Parse("127.0.0.1"), udpBoxPureContainer.udpBoxPort));
+
+                if (udpBoxPureContainer != null)
+                {
+                    udpBoxPureContainer.UDPBox.SendMessage(mTestPackage.Serialize()
+                        , new IPEndPoint(IPAddress.Parse("127.0.0.1"), udpBoxPureContainer.udpBoxBeginPort));
+                }
+                else
+                {
+                    udpboxContainer.UDPBox.SendMessage(mTestPackage.Serialize()
+                        , new IPEndPoint(IPAddress.Parse("127.0.0.1"), udpboxContainer.GetRandomUDPBoxPort()));
+                }
             }
         }
     }

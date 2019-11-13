@@ -301,10 +301,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMaster: 1
-  isDebug: 0
+  isDebug: 1
   broadcastSendPort: 1235
   broadcastListenPort: 1234
-  udpBoxPort: 1236
+  udpBoxBeginPort: 1240
+  udpBoxEndPort: 1250
   broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35
@@ -352,10 +353,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMaster: 0
-  isDebug: 1
+  isDebug: 0
   broadcastSendPort: 1234
   broadcastListenPort: 1235
-  udpBoxPort: 1237
+  udpBoxBeginPort: 1250
+  udpBoxEndPort: 1260
   broadcastNetprefixIP: 192.168.253.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35

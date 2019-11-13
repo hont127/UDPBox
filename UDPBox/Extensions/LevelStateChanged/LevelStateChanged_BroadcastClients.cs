@@ -15,7 +15,7 @@ namespace Hont.UDPBoxExtensions
 
         void OnEnable()
         {
-            var levelStateChangePackage = new LevelStateChangedPackage(UDPBoxUtility.DefaultHeadBytes);
+            var levelStateChangePackage = new LevelStateChangedPackage(udpBoxContainer.PackageHeadBytes);
             levelStateChangePackage.StateID = newStateID;
             levelStateChangePackage.ArgInfo = argInfo;
 

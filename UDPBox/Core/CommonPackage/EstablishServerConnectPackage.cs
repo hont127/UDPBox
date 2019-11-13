@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Hont.UDPBoxPackage
@@ -8,7 +7,8 @@ namespace Hont.UDPBoxPackage
     public class EstablishServerConnectPackage : Package
     {
         public string IpAddress { get; set; }
-        public int Port { get; set; }
+        public int BeginPort { get; set; }
+        public int EndPort { get; set; }
 
 
         public EstablishServerConnectPackage(byte[] headBytes)
@@ -17,9 +17,10 @@ namespace Hont.UDPBoxPackage
             base.Type = (int)EPackageType.System;
             base.ID = UDPBoxUtility.ESTABLISH_SERVER_CONNECT_ID;
 
-            Args = new PackageArgument[2]
+            Args = new PackageArgument[3]
                  {
                     new PackageArgument_String(),
+                    new PackageArgument_Int(),
                     new PackageArgument_Int(),
                  };
         }
@@ -27,7 +28,8 @@ namespace Hont.UDPBoxPackage
         public override byte[] Serialize()
         {
             (Args[0] as PackageArgument_String).Value = IpAddress;
-            (Args[1] as PackageArgument_Int).Value = Port;
+            (Args[1] as PackageArgument_Int).Value = BeginPort;
+            (Args[2] as PackageArgument_Int).Value = EndPort;
 
             return base.Serialize();
         }
@@ -38,7 +40,8 @@ namespace Hont.UDPBoxPackage
             if (!result) return false;
 
             IpAddress = (Args[0] as PackageArgument_String).Value;
-            Port = (Args[1] as PackageArgument_Int).Value;
+            BeginPort = (Args[1] as PackageArgument_Int).Value;
+            EndPort = (Args[2] as PackageArgument_Int).Value;
 
             return result;
         }

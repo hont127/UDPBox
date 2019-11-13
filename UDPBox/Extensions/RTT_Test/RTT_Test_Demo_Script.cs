@@ -14,7 +14,7 @@ namespace Hont.UDPBoxExtensions
 
         void Awake()
         {
-            mRTT_TestPackage = new RTT_TestPackage(UDPBoxUtility.DefaultHeadBytes);
+            mRTT_TestPackage = new RTT_TestPackage(udpBoxContainer.PackageHeadBytes);
         }
 
         void OnGUI()

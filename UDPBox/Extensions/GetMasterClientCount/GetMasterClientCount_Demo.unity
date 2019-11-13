@@ -263,9 +263,12 @@ MonoBehaviour:
   isDebug: 0
   broadcastSendPort: 1235
   broadcastListenPort: 1234
-  udpBoxPort: 1236
+  udpBoxBeginPort: 1240
+  udpBoxEndPort: 1250
   broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
+  sendMsgThreadSleepTime_MS: 35
+  recvMsgThreadSleepTime_MS: 32
 --- !u!4 &893708869
 Transform:
   m_ObjectHideFlags: 0
@@ -312,9 +315,12 @@ MonoBehaviour:
   isDebug: 0
   broadcastSendPort: 1234
   broadcastListenPort: 1235
-  udpBoxPort: 1237
+  udpBoxBeginPort: 1250
+  udpBoxEndPort: 1260
   broadcastNetprefixIP: 192.168.253.
   proj_prefix: Demo
+  sendMsgThreadSleepTime_MS: 35
+  recvMsgThreadSleepTime_MS: 32
 --- !u!4 &995071312
 Transform:
   m_ObjectHideFlags: 0

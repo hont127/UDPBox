@@ -13,10 +13,10 @@ namespace Hont.UDPBoxExtensions
         SyncGOTransformsPackage mTemplate;
 
 
-        public SyncGOTransformsHandler()
+        public SyncGOTransformsHandler(byte[] packageHeadBytes)
         {
             transformsList = new List<SyncGOTransforms_TransformMono>(8);
-            mTemplate = new SyncGOTransformsPackage(UDPBoxUtility.DefaultHeadBytes);
+            mTemplate = new SyncGOTransformsPackage(packageHeadBytes);
         }
 
         protected override short[] GetCacheProcessableID()
@@ -75,7 +75,7 @@ namespace Hont.UDPBoxExtensions
         {
             UDPBox_GameThreadMediator.Instance?.EnqueueToUpdateQueue(() =>
             {
-                var package = new SyncGOTransformsPackage(UDPBoxUtility.DefaultHeadBytes);
+                var package = new SyncGOTransformsPackage(mTemplate.HeadBytes);
                 package.Op = SyncGOTransformsPackage.EOperate.Push;
 
                 for (int i = 0, iMax = transformsList.Count; i < iMax; i++)

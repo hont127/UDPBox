@@ -3,8 +3,9 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Hont.UDPBoxPackage;
 
-namespace Hont.UDPBoxPackage
+namespace Hont.UDPBoxExtensions
 {
     public class PackageArgument_UnityBase : PackageArgument
     {
