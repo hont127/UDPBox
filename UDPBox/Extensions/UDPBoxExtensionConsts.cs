@@ -15,6 +15,7 @@ namespace Hont.UDPBoxExtensions
         public const int RESOURCES_INSTANCE = 106;
         public const int REQUEST_STRING = 107;
         public const int OPERATE_ANIMATOR = 108;
+        public const int OPERATE_GO_TRANSFORM = 109;
     }
 }
 
