@@ -110,10 +110,6 @@ namespace Hont.UDPBoxPackage
         }
 
 
-        public UDPBOX_UDPClient() : this(AddressFamily.InterNetwork, 4096)
-        {
-        }
-
         public UDPBOX_UDPClient(AddressFamily family, int bufferCacheLength)
         {
             m_Buffer = new byte[bufferCacheLength];
@@ -122,6 +118,8 @@ namespace Hont.UDPBoxPackage
                 throw new ArgumentException("net_protocol_invalid_family");
             m_Family = family;
             CreateClientSocket();
+            Client.SendBufferSize = mBufferCacheLength;
+            Client.ReceiveBufferSize = mBufferCacheLength;
         }
 
         public UDPBOX_UDPClient(int port) : this(port, 1024, AddressFamily.InterNetwork)
@@ -146,32 +144,9 @@ namespace Hont.UDPBoxPackage
                 localEP = new IPEndPoint(IPAddress.IPv6Any, port);
             }
             CreateClientSocket();
+            Client.SendBufferSize = mBufferCacheLength;
+            Client.ReceiveBufferSize = mBufferCacheLength;
             Client.Bind(localEP);
-        }
-
-        public UDPBOX_UDPClient(IPEndPoint localEP, int bufferCacheLength, int buffer)
-        {
-            mBufferCacheLength = bufferCacheLength;
-            m_Buffer = new byte[mBufferCacheLength];
-            m_Family = AddressFamily.InterNetwork;
-            if (localEP == null)
-            {
-                throw new ArgumentNullException("localEP");
-            }
-            m_Family = localEP.AddressFamily;
-            CreateClientSocket();
-            Client.Bind(localEP);
-        }
-
-        public UDPBOX_UDPClient(string hostname, int port, int bufferCacheLength)
-        {
-            mBufferCacheLength = bufferCacheLength;
-            m_Buffer = new byte[mBufferCacheLength];
-            m_Family = AddressFamily.InterNetwork;
-            if (hostname == null)
-                throw new ArgumentNullException("hostname");
-
-            Connect(hostname, port);
         }
 
         public void AllowNatTraversal(bool allowed)
