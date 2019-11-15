@@ -272,7 +272,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMaster: 1
-  isDebug: 1
+  isDebug: 0
   broadcastSendPort: 1235
   broadcastListenPort: 1234
   udpBoxBeginPort: 1240
@@ -331,7 +331,7 @@ MonoBehaviour:
   broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35
-  enableLog: 1
+  enableLog: 0
 --- !u!4 &995071312
 Transform:
   m_ObjectHideFlags: 0

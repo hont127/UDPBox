@@ -12,11 +12,11 @@ namespace Hont.UDPBoxPackage
     {
         int mBroadcastPort;
         Thread mThread;
-        UdpClient mUdpClient;
+        UDPBOX_UDPClient mUdpClient;
         bool mIsReleased;
 
 
-        public UDPBoxBroadcast(UdpClient udpClient, int broadcastPort)
+        public UDPBoxBroadcast(UDPBOX_UDPClient udpClient, int broadcastPort)
         {
             mBroadcastPort = broadcastPort;
             mUdpClient = udpClient;

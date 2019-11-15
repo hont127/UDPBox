@@ -23,7 +23,7 @@ namespace Hont.UDPBoxPackage
             public IPEndPoint IPEndPoint { get; set; }
         }
 
-        List<UdpClient> mUdpClientsList;
+        List<UDPBOX_UDPClient> mUdpClientsList;
         byte[] mPackageHeadBytes;
         List<HandlerBase> mHandlerList;
         List<Action> mWorkThreadOperateList;
@@ -79,16 +79,16 @@ namespace Hont.UDPBoxPackage
             mWorkThread = new Thread(WorkThreadLoop);
         }
 
-        public UDPBox(UdpClient[] udpClientsArray, string packageHead)
+        public UDPBox(UDPBOX_UDPClient[] udpClientsArray, string packageHead)
             : this()
         {
             Initialization(udpClientsArray, packageHead);
             RegistHandler(new PingPongHandler(mPackageHeadBytes));
         }
 
-        public void Initialization(UdpClient[] udpClientsArray, string packageHead)
+        public void Initialization(UDPBOX_UDPClient[] udpClientsArray, string packageHead)
         {
-            mUdpClientsList = new List<UdpClient>(udpClientsArray);
+            mUdpClientsList = new List<UDPBOX_UDPClient>(udpClientsArray);
             mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
         }
 
@@ -206,7 +206,7 @@ namespace Hont.UDPBoxPackage
             mHandlerList.Clear();
         }
 
-        UdpClient GetRandomUDPClient()
+        UDPBOX_UDPClient GetRandomUDPClient()
         {
             return mUdpClientsList[mRandom.Next(0, mUdpClientsList.Count)];
         }
@@ -252,7 +252,7 @@ namespace Hont.UDPBoxPackage
 
         void ReceiveMessageCallback(IAsyncResult asyncResult)
         {
-            var udpClient = asyncResult.AsyncState as UdpClient;
+            var udpClient = asyncResult.AsyncState as UDPBOX_UDPClient;
             mCacheIPEndPoint = mCacheIPEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
             var bytes = udpClient.EndReceive(asyncResult, ref mCacheIPEndPoint);
 

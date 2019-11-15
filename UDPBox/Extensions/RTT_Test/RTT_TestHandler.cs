@@ -27,8 +27,6 @@ namespace Hont.UDPBoxExtensions
         {
             mTemplate.Deserialize(packageBytes);
 
-            UnityEngine.Debug.Log("mTemplate.Op: " + mTemplate.Op);
-
             switch (mTemplate.Op)
             {
                 case RTT_TestPackage.EOp.A:

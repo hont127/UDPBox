@@ -175,9 +175,9 @@ namespace Hont.UDPBoxPackage
             return false;
         }
 
-        public static UdpClient GeterateUdpClient(int port)
+        public static UDPBOX_UDPClient GeterateUdpClient(int port)
         {
-            var mUdpClient = new UdpClient(port);
+            var mUdpClient = new UDPBOX_UDPClient(port);
             mUdpClient.Client.SendTimeout = 1000;
             mUdpClient.Client.ReceiveTimeout = 10000;
 
@@ -190,12 +190,12 @@ namespace Hont.UDPBoxPackage
             return mUdpClient;
         }
 
-        public static UdpClient[] GeterateUdpClientsArray(int beginPort, int endPort)
+        public static UDPBOX_UDPClient[] GeterateUdpClientsArray(int beginPort, int endPort)
         {
-            var result = new UdpClient[endPort - beginPort];
+            var result = new UDPBOX_UDPClient[endPort - beginPort];
 
             for (int i = 0; i < result.Length; i++)
-                result[i] = new UdpClient(beginPort + i);
+                result[i] = GeterateUdpClient(beginPort + i);
 
             return result;
         }

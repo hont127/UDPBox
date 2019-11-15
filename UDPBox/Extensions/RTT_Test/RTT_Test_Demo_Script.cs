@@ -25,6 +25,7 @@ namespace Hont.UDPBoxExtensions
             {
                 mRTT_TestPackage.Op = RTT_TestPackage.EOp.A;
                 mRTT_TestPackage.ATime = System.DateTime.Now.Ticks;
+                UnityEngine.Debug.Log("udpBoxContainer.MasterIPConnectInfo.IPEndPoint: " + udpBoxContainer.MasterIPConnectInfo.IPEndPoint);
                 udpBoxContainer.SendUDPMessage(mRTT_TestPackage.Serialize(), udpBoxContainer.MasterIPConnectInfo.IPEndPoint);
             }
         }

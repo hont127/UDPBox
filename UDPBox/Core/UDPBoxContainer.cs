@@ -47,7 +47,7 @@ namespace Hont.UDPBoxPackage
 
         public enum EState { NoStart, NoClients, HasClients, NoServer, HasServer, Released }
 
-        UdpClient mBroadcastUdpClient;
+        UDPBOX_UDPClient mBroadcastUdpClient;
         UDPBoxBroadcast mUDPBoxBroadcast;
 
         long mLastWorkThreadTime;
@@ -107,7 +107,7 @@ namespace Hont.UDPBoxPackage
 
         public void Initialization(string packageHead)
         {
-            var udpClientArray = new UdpClient[UdpBoxEndPort - UdpBoxBeginPort];
+            var udpClientArray = new UDPBOX_UDPClient[UdpBoxEndPort - UdpBoxBeginPort];
             for (int i = 0, port = UdpBoxBeginPort; port < UdpBoxEndPort; i++, port++)
             {
                 udpClientArray[i] = UDPBoxUtility.GeterateUdpClient(port);
