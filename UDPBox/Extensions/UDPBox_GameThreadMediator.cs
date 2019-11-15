@@ -54,14 +54,20 @@ namespace Hont.UDPBoxExtensions
 
         void Update()
         {
-            for (int i = 0; i < mActionQueue.Count; i++)
-                mActionQueue.Dequeue()?.Invoke();
+            lock (mActionQueue)
+            {
+                for (int i = 0; i < mActionQueue.Count; i++)
+                    mActionQueue.Dequeue()?.Invoke();
+            }
         }
 
         void LateUpdate()
         {
-            for (int i = 0; i < mLateUpdateActionQueue.Count; i++)
-                mLateUpdateActionQueue.Dequeue()?.Invoke();
+            lock (mActionQueue)
+            {
+                for (int i = 0; i < mLateUpdateActionQueue.Count; i++)
+                    mLateUpdateActionQueue.Dequeue()?.Invoke();
+            }
         }
     }
 }

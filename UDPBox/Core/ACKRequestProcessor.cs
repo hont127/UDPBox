@@ -73,6 +73,8 @@ namespace Hont.UDPBoxPackage
 
             if (package_type == (short)EPackageType.Need_Ack_Session)
             {
+                mUdpBox.Logger.Log("Send Need Ack Session Package", EUDPBoxLogType.Log);
+
                 var flag = false;
                 for (int i = 0, iMax = mWaitACKInfoList.Count; i < iMax; i++)
                 {
@@ -87,6 +89,8 @@ namespace Hont.UDPBoxPackage
 
                 if (!flag)
                 {
+                    mUdpBox.Logger.Log("Add to wait ACK info list, bytes: " + bytes.Length + " package id: " + package_id, EUDPBoxLogType.Log);
+
                     mWaitACKInfoList.Add(new WaitACKInfo()
                     {
                         Bytes = bytes,
@@ -125,6 +129,8 @@ namespace Hont.UDPBoxPackage
 
             if (type == (short)EPackageType.Need_Ack_Session)//Received generic ack package.
             {
+                mUdpBox.Logger.Log("Recv need ack session package: " + id, EUDPBoxLogType.Log);
+
                 if (mPackageInterceptMarkList.Count > MAGIC_NUMBER_MARK_COUNT)
                     mPackageInterceptMarkList.RemoveAt(0);
                 mPackageInterceptMarkList.Add(new PackageCompareInfo() { ID = id, MagicNumber = magicNumber });
@@ -135,6 +141,8 @@ namespace Hont.UDPBoxPackage
             }
             else if (id == UDPBoxUtility.ACK_ID)//Received ack package.
             {
+                mUdpBox.Logger.Log("Recv ack package: " + id, EUDPBoxLogType.Log);
+
                 mACKPackageTemplate.Deserialize(messageInterceptInfo.Bytes);
 
                 var ack_id = mACKPackageTemplate.ACK_ID;

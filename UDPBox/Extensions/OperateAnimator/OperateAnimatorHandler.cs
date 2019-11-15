@@ -98,8 +98,6 @@ namespace Hont.UDPBoxExtensions
             {
                 var item = dataList[i];
 
-                UnityEngine.Debug.Log("item: " + item.NetworkID + " op: " + item.Op + " state: " + item.StateName);
-
                 var animator_component = animatorMonoList.Find(m => m.networkID == item.NetworkID).animator;
 
                 switch (item.Op)

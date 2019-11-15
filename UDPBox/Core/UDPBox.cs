@@ -51,6 +51,8 @@ namespace Hont.UDPBoxPackage
         public uint StatisticsBadPackageCount { get; private set; }
         public uint StatisticsTotalPackageCount { get; private set; }
 
+        public IUDPBoxLogger Logger { get; private set; }
+
         public byte[] PackageHeadBytes { get { return mPackageHeadBytes; } }
         public event Action<byte[], IPEndPoint> OnSendMessage;
         public event Action<Exception> OnException;
@@ -69,6 +71,8 @@ namespace Hont.UDPBoxPackage
 
             mHandlerList = new List<HandlerBase>(16);
             mWorkThreadOperateList = new List<Action>(16);
+
+            Logger = new EmptyUDPBoxLogger();
 
             mSendMessageThread = new Thread(SendMessageThreadLoop);
             mSendMessageThread.Priority = ThreadPriority.AboveNormal;
@@ -104,28 +108,43 @@ namespace Hont.UDPBoxPackage
             mWorkThread.Start();
         }
 
+        public void SetLogger(IUDPBoxLogger logger)
+        {
+            Logger = logger;
+        }
+
         public void RegistMessageIntercept(Func<MessageInterceptInfo, bool> content)
         {
+            Logger.Log("RegistMessageIntercept: " + content, EUDPBoxLogType.Log);
+
             mMessageInterceptList.Add(content);
         }
 
         public void UnregistMessageIntercept(Func<MessageInterceptInfo, bool> content)
         {
+            Logger.Log("UnregistMessageIntercept: " + content, EUDPBoxLogType.Log);
+
             mMessageInterceptList.Remove(content);
         }
 
         public void RegistWorkThreadOperate(Action operateAction)
         {
+            Logger.Log("RegistWorkThreadOperate: " + operateAction, EUDPBoxLogType.Log);
+
             mWorkThreadOperateList.Add(operateAction);
         }
 
         public void UnregistWorkThreadOperate(Action operateAction)
         {
+            Logger.Log("UnregistWorkThreadOperate: " + operateAction, EUDPBoxLogType.Log);
+
             mWorkThreadOperateList.Remove(operateAction);
         }
 
         public void RegistHandler(HandlerBase handler)
         {
+            Logger.Log("RegistHandler: " + handler, EUDPBoxLogType.Log);
+
             mHandlerList.Add(handler);
 
             handler.OnRegistedToUDPBox(this);
@@ -133,6 +152,8 @@ namespace Hont.UDPBoxPackage
 
         public void UnregistHandler(HandlerBase handler)
         {
+            Logger.Log("UnregistHandler: " + handler, EUDPBoxLogType.Log);
+
             mHandlerList.Remove(handler);
 
             handler.OnUnregistedFromUDPBox(this);
@@ -142,6 +163,8 @@ namespace Hont.UDPBoxPackage
         {
             lock (mSendQueue)
             {
+                Logger.Log("SendMessage: " + bytes.Length + " endPoint: " + endPoint, EUDPBoxLogType.Log);
+
                 mSendQueue.Enqueue(new QueueInfo()
                 {
                     Content = bytes,
@@ -154,6 +177,8 @@ namespace Hont.UDPBoxPackage
 
         public void Dispose()
         {
+            Logger.Log("Dispose", EUDPBoxLogType.Log);
+
             mACKRequestProcessor.Release();
 
             if (mSendMessageThread.IsAlive)
@@ -207,6 +232,7 @@ namespace Hont.UDPBoxPackage
                             ushort magicNumber = 0;
                             short id = 0;
                             UDPBoxUtility.GetPackageBaseInfo(item.Content, PackageHeadBytes, out type, out magicNumber, out id);
+                            Logger.Log("Final Send Msg: " + id + " magic num: " + magicNumber + " type: " + type, EUDPBoxLogType.Log);
                             GetRandomUDPClient().Send(item.Content, item.Content.Length, ipEndPoint);
                         }
                     }
@@ -234,6 +260,7 @@ namespace Hont.UDPBoxPackage
             {
                 lock (mRecvQueue)
                 {
+                    Logger.Log("Recv msg to queue: " + bytes.Length + " IPEndPoint: " + mCacheIPEndPoint, EUDPBoxLogType.Log);
                     mRecvQueue.Enqueue(new QueueInfo()
                     {
                         Content = bytes,
@@ -297,13 +324,21 @@ namespace Hont.UDPBoxPackage
             if (UDPBoxUtility.PackageIsBroken(bytes, mPackageHeadBytes))
             {
                 StatisticsBadPackageCount++;
+                Logger.Log("Package Is Broken!", EUDPBoxLogType.Warning);
 
                 return;
             }
 
             var flag = false;
             for (int i = 0, iMax = mMessageInterceptList.Count; i < iMax; i++)
-                flag |= mMessageInterceptList[i](new MessageInterceptInfo() { Bytes = bytes, IPEndPoint = ipEndPoint });
+            {
+                var item = mMessageInterceptList[i];
+                flag = item(new MessageInterceptInfo() { Bytes = bytes, IPEndPoint = ipEndPoint });
+                if (flag)
+                {
+                    Logger.Log("Message Intercepted: " + item + " bytes: " + bytes.Length + " ipEndPoint: " + ipEndPoint, EUDPBoxLogType.Log);
+                }
+            }
             if (flag) return;
 
             var targetHandler = default(HandlerBase);
@@ -316,6 +351,8 @@ namespace Hont.UDPBoxPackage
                     break;
                 }
             }
+
+            Logger.Log("Process Package: " + targetHandler, EUDPBoxLogType.Log);
 
             if (targetHandler != null)
                 targetHandler.Process(this, bytes, ipEndPoint);

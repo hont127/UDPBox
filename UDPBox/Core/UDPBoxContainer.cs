@@ -189,6 +189,11 @@ namespace Hont.UDPBoxPackage
             UDPBox.Dispose();
         }
 
+        public void SetLogger(IUDPBoxLogger logger)
+        {
+            UDPBox.SetLogger(logger);
+        }
+
         public void SendUDPMessageWithRandomPort(byte[] bytes, ConnectInfo connectInfo)
         {
             UpdateConnectInfoToRandomPort(connectInfo);

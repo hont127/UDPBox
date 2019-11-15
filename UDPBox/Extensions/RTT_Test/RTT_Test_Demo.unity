@@ -280,7 +280,7 @@ MonoBehaviour:
   broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35
-  recvMsgThreadSleepTime_MS: 32
+  enableLog: 0
 --- !u!4 &893708869
 Transform:
   m_ObjectHideFlags: 0
@@ -331,7 +331,7 @@ MonoBehaviour:
   broadcastNetprefixIP: 192.168.1.
   proj_prefix: Demo
   sendMsgThreadSleepTime_MS: 35
-  recvMsgThreadSleepTime_MS: 32
+  enableLog: 1
 --- !u!4 &995071312
 Transform:
   m_ObjectHideFlags: 0

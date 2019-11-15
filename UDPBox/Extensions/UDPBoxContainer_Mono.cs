@@ -26,6 +26,7 @@ namespace Hont.UDPBoxExtensions
         public string broadcastNetprefixIP = "192.168.1.";
         public string proj_prefix = "Demo";
         public int sendMsgThreadSleepTime_MS = 35;
+        public bool enableLog = true;
 
         public UDPBox UDPBox { get { return mUDPBoxContainer.UDPBox; } }
         public UDPBoxContainer.EState State { get { return mUDPBoxContainer.State; } }
@@ -96,6 +97,11 @@ namespace Hont.UDPBoxExtensions
             mUDPBoxContainer.Initialization(proj_prefix + "_" + UDPBoxUtility.DefaultHead);
             mUDPBoxContainer.SendMsgThreadSleepTime = sendMsgThreadSleepTime_MS;
 
+            if (enableLog)
+            {
+                mUDPBoxContainer.SetLogger(HardDiskUDPBoxLogger.Instance);
+            }
+
             mUDPBoxContainer.Start(isMaster);
         }
 
@@ -152,13 +158,16 @@ namespace Hont.UDPBoxExtensions
             {
                 GUILayout.BeginVertical(GUI.skin.box);
                 GUILayout.Box("Client:");
-                var clientIPEndPointList = ClientIPConnectInfoList;
-                for (int i = 0, iMax = clientIPEndPointList.Count; i < iMax; i++)
+                lock (ClientIPConnectInfoList)
                 {
-                    var item = clientIPEndPointList[i];
+                    var clientIPEndPointList = ClientIPConnectInfoList;
+                    for (int i = 0, iMax = clientIPEndPointList.Count; i < iMax; i++)
+                    {
+                        var item = clientIPEndPointList[i];
 
-                    if (item.Valid)
-                        GUILayout.Box("[Client] Address: " + item.IPEndPoint.Address + " Port: " + item.IPEndPoint.Port + " Alive timer: " + item.AliveTimer.ToString("F3") + " Is Established: " + item.IsClientEstablished);
+                        if (item.Valid)
+                            GUILayout.Box("[Client] Address: " + item.IPEndPoint.Address + " Port: " + item.IPEndPoint.Port + " Alive timer: " + item.AliveTimer.ToString("F3") + " Is Established: " + item.IsClientEstablished);
+                    }
                 }
                 GUILayout.EndVertical();
             }
