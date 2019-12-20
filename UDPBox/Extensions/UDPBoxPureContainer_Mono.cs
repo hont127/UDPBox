@@ -49,9 +49,9 @@ namespace Hont.UDPBoxExtensions
 
         void Start()
         {
-            UDPBox_GameThreadMediator.Instance.GetHashCode();
+            UDPBox_GameThreadMediator.InitializationInUnityGameThread();
 
-            var udpClientsArray = UDPBoxUtility.GeterateUdpClientsArray(udpBoxBeginPort, udpBoxEndPort);
+            var udpClientsArray = UDPBoxFactory.GeterateUdpClientsArray(udpBoxBeginPort, udpBoxEndPort);
             mUDPBox.Initialization(udpClientsArray, UDPBoxUtility.DefaultHead);
             mUDPBox.Start();
         }

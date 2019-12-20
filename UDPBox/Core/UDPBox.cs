@@ -23,7 +23,7 @@ namespace Hont.UDPBoxPackage
             public IPEndPoint IPEndPoint { get; set; }
         }
 
-        List<UDPBOX_UDPClient> mUdpClientsList;
+        List<UDPBox_UDPClient> mUdpClientsList;
         byte[] mPackageHeadBytes;
         List<HandlerBase> mHandlerList;
         List<Action> mWorkThreadOperateList;
@@ -32,8 +32,6 @@ namespace Hont.UDPBoxPackage
         Thread mSendMessageThread;
 
         bool mIsReleased;
-
-        int mPort;
 
         Random mRandom;
 
@@ -79,16 +77,16 @@ namespace Hont.UDPBoxPackage
             mWorkThread = new Thread(WorkThreadLoop);
         }
 
-        public UDPBox(UDPBOX_UDPClient[] udpClientsArray, string packageHead)
+        public UDPBox(UDPBox_UDPClient[] udpClientsArray, string packageHead)
             : this()
         {
             Initialization(udpClientsArray, packageHead);
             RegistHandler(new PingPongHandler(mPackageHeadBytes));
         }
 
-        public void Initialization(UDPBOX_UDPClient[] udpClientsArray, string packageHead)
+        public void Initialization(UDPBox_UDPClient[] udpClientsArray, string packageHead)
         {
-            mUdpClientsList = new List<UDPBOX_UDPClient>(udpClientsArray);
+            mUdpClientsList = new List<UDPBox_UDPClient>(udpClientsArray);
             mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
         }
 
@@ -104,7 +102,12 @@ namespace Hont.UDPBoxPackage
             }
 
             mIsReleased = false;
+            if (mSendMessageThread.ThreadState != ThreadState.Stopped)
+                mSendMessageThread = new Thread(SendMessageThreadLoop);
             mSendMessageThread.Start();
+
+            if (mWorkThread.ThreadState != ThreadState.Stopped)
+                mWorkThread = new Thread(WorkThreadLoop);
             mWorkThread.Start();
         }
 
@@ -206,7 +209,7 @@ namespace Hont.UDPBoxPackage
             mHandlerList.Clear();
         }
 
-        UDPBOX_UDPClient GetRandomUDPClient()
+        UDPBox_UDPClient GetRandomUDPClient()
         {
             return mUdpClientsList[mRandom.Next(0, mUdpClientsList.Count)];
         }
@@ -252,7 +255,7 @@ namespace Hont.UDPBoxPackage
 
         void ReceiveMessageCallback(IAsyncResult asyncResult)
         {
-            var udpClient = asyncResult.AsyncState as UDPBOX_UDPClient;
+            var udpClient = asyncResult.AsyncState as UDPBox_UDPClient;
             mCacheIPEndPoint = mCacheIPEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
             var bytes = udpClient.EndReceive(asyncResult, ref mCacheIPEndPoint);
 
@@ -278,7 +281,6 @@ namespace Hont.UDPBoxPackage
             try
             {
                 var ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
                 while (!mIsReleased)
                 {
                     for (int i = 0, iMax = mWorkThreadOperateList.Count; i < iMax; i++)

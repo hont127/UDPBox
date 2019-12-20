@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Hont.UDPBoxPackage
 {
-    public class UDPBOX_UDPClient : IDisposable
+    public class UDPBox_UDPClient : IDisposable
     {
         static IPEndPoint Any_IPEndPoint = new IPEndPoint(IPAddress.Any, 0);
         static IPEndPoint IPv6Any_IPEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
@@ -110,7 +110,7 @@ namespace Hont.UDPBoxPackage
         }
 
 
-        public UDPBOX_UDPClient(AddressFamily family, int bufferCacheLength)
+        public UDPBox_UDPClient(AddressFamily family, int bufferCacheLength)
         {
             m_Buffer = new byte[bufferCacheLength];
             m_Family = AddressFamily.InterNetwork;
@@ -122,11 +122,11 @@ namespace Hont.UDPBoxPackage
             Client.ReceiveBufferSize = mBufferCacheLength;
         }
 
-        public UDPBOX_UDPClient(int port) : this(port, 1024, AddressFamily.InterNetwork)
+        public UDPBox_UDPClient(int port) : this(port, 1024, AddressFamily.InterNetwork)
         {
         }
 
-        public UDPBOX_UDPClient(int port, int bufferCacheLength, AddressFamily family)
+        public UDPBox_UDPClient(int port, int bufferCacheLength, AddressFamily family)
         {
             mBufferCacheLength = bufferCacheLength;
 

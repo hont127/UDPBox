@@ -40,7 +40,7 @@ namespace Hont.UDPBoxExtensions
                 mTemplate.DataList.Clear();
                 mTemplate.DataList.AddRange(datas);
 
-                mUdpBoxContainer.SendUDPMessageWithRandomPort(mTemplate.Serialize(), mUdpBoxContainer.MasterIPConnectInfo);
+                mUdpBoxContainer.SendUDPMessageToRandomPort(mTemplate.Serialize(), mUdpBoxContainer.MasterIPConnectInfo);
             }
         }
 
@@ -78,7 +78,7 @@ namespace Hont.UDPBoxExtensions
                 if (!client.Valid) continue;
                 if (ignoreIPEndPoint != null && client.IPEndPoint.Equals(ignoreIPEndPoint)) continue;
 
-                mUdpBoxContainer.SendUDPMessageWithRandomPort(bytes, client);
+                mUdpBoxContainer.SendUDPMessageToRandomPort(bytes, client);
             }
         }
 

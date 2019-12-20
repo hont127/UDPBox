@@ -24,8 +24,9 @@ namespace Hont.UDPBoxExtensions
         public int udpBoxEndPort = 1250;
         [Tooltip("format: \"192.168.1.\"")]
         public string broadcastNetprefixIP = "192.168.1.";
-        public string proj_prefix = "Demo";
+        public string packageHeadString = "Demo";
         public int sendMsgThreadSleepTime_MS = 35;
+        public bool useInternalBroadcastLogic = true;
         public bool enableLog = true;
 
         public UDPBox UDPBox { get { return mUDPBoxContainer.UDPBox; } }
@@ -33,12 +34,14 @@ namespace Hont.UDPBoxExtensions
 
         public byte[] PackageHeadBytes { get { return mUDPBoxContainer.PackageHeadBytes; } }
 
+        public IPAddress SelfIPAddress { get { return mUDPBoxContainer.SelfIPAddress; } }
+
         public event Action OnConnectedMaster
         {
             add { mUDPBoxContainer.OnConnectedMaster += value; }
             remove { mUDPBoxContainer.OnConnectedMaster -= value; }
         }
-        public event Action<IPEndPoint> OnConnectedClient
+        public event Action OnConnectedClient
         {
             add { mUDPBoxContainer.OnConnectedClient += value; }
             remove { mUDPBoxContainer.OnConnectedClient -= value; }
@@ -55,9 +58,19 @@ namespace Hont.UDPBoxExtensions
         }
 
 
-        public void SendUDPMessageWithRandomPort(byte[] bytes, UDPBoxContainer.ConnectInfo connectInfo)
+        public void SendUDPMessageToRandomPort(byte[] bytes, UDPBoxContainer.ConnectInfo connectInfo)
         {
-            mUDPBoxContainer.SendUDPMessageWithRandomPort(bytes, connectInfo);
+            mUDPBoxContainer.SendUDPMessageToRandomPort(bytes, connectInfo);
+        }
+
+        public void SendUDPMessageToRandomPort(byte[] bytes, int beginPort, int endPort, IPAddress address)
+        {
+            mUDPBoxContainer.SendUDPMessageToRandomPort(bytes, beginPort, endPort, address);
+        }
+
+        public void SendUDPMessageToRandomPort(byte[] bytes, int beginPort, int endPort, IPEndPoint ipEndPoint)
+        {
+            mUDPBoxContainer.SendUDPMessageToRandomPort(bytes, beginPort, endPort, ipEndPoint);
         }
 
         public void SendUDPMessage(byte[] bytes, IPEndPoint ipEndPoint)
@@ -79,7 +92,7 @@ namespace Hont.UDPBoxExtensions
         {
             mUDPBoxContainer.RegistWorkThreadOperate(operateAction);
         }
-        
+
         public void UnregistWorkThreadOperate(Action operateAction)
         {
             mUDPBoxContainer.UnregistWorkThreadOperate(operateAction);
@@ -87,14 +100,16 @@ namespace Hont.UDPBoxExtensions
 
         public void RestartUDPBoxContainer()
         {
-            mUDPBoxContainer.Proj_Prefix = proj_prefix;
+            if (State != UDPBoxContainer.EState.NoStart)
+                ReleaseUDPBoxContainer();
+
             mUDPBoxContainer.BroadcastListenPort = broadcastListenPort;
             mUDPBoxContainer.BroadcastSendPort = broadcastSendPort;
             mUDPBoxContainer.UdpBoxBeginPort = udpBoxBeginPort;
             mUDPBoxContainer.UdpBoxEndPort = udpBoxEndPort;
             mUDPBoxContainer.BroadcastNetPrefixIP = broadcastNetprefixIP;
 
-            mUDPBoxContainer.Initialization(proj_prefix + "_" + UDPBoxUtility.DefaultHead);
+            mUDPBoxContainer.Initialization(packageHeadString, useInternalBroadcastLogic);
             mUDPBoxContainer.SendMsgThreadSleepTime = sendMsgThreadSleepTime_MS;
 
             if (enableLog)
@@ -127,13 +142,7 @@ namespace Hont.UDPBoxExtensions
 
         void OnEnable()
         {
-            UDPBox_GameThreadMediator.Instance.GetHashCode();
-
-            mUDPBoxContainer = new UDPBoxContainer();
-            mUDPBoxContainer.OnException += (exception) =>
-            {
-                UnityEngine.Debug.LogError(exception);
-            };
+            mUDPBoxContainer = UDPBoxFactory.GenerateUDPBoxContainerInUnityGameThread(true, useInternalBroadcastLogic);
 
             if (GetComponent<UDPBoxMasterSearcher>() == null)
                 RestartUDPBoxContainer();

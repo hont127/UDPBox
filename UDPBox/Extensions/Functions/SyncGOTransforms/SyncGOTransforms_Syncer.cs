@@ -34,13 +34,13 @@ namespace Hont.UDPBoxExtensions
                         var client = udpBox.ClientIPConnectInfoList[i];
 
                         mPackageTemplate.Op = SyncGOTransformsPackage.EOperate.Fetch;
-                        udpBox.SendUDPMessageWithRandomPort(mPackageTemplate.Serialize(), client);
+                        udpBox.SendUDPMessageToRandomPort(mPackageTemplate.Serialize(), client);
                     }
                 }
                 else
                 {
                     mPackageTemplate.Op = SyncGOTransformsPackage.EOperate.FetchAll;
-                    udpBox.SendUDPMessageWithRandomPort(mPackageTemplate.Serialize(), udpBox.MasterIPConnectInfo);
+                    udpBox.SendUDPMessageToRandomPort(mPackageTemplate.Serialize(), udpBox.MasterIPConnectInfo);
                 }
 
                 yield return waitForSecond;

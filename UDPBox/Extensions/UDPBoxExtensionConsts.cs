@@ -6,6 +6,8 @@ namespace Hont.UDPBoxExtensions
 {
     public partial class UDPBoxExtensionConsts
     {
+        public const int HALL_INFO = 99;
+
         public const int GET_MASTER_CLIENT_COUNT = 100;
         public const int SYNC_TRANSFORMS = 101;
         public const int SYNC_GO_TRANSFORMS = 102;

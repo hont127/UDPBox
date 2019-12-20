@@ -9,7 +9,7 @@ namespace Hont.UDPBoxExtensions
 {
     public class UserNameListHandler : HandlerBase
     {
-        public const int REFRESH_DELAY = 5;
+        public const float REFRESH_DELAY = 1f;
 
         UDPBoxContainer mUDPBoxContainer;
 

@@ -14,7 +14,7 @@ namespace Hont.UDPBoxPackage
 
         void OnEnable()
         {
-            var udpClients = UDPBoxUtility.GeterateUdpClientsArray(1235, 1236);
+            var udpClients = UDPBoxFactory.GeterateUdpClientsArray(1235, 1236);
 
             mUDPBoxConnect = new UDPBox(udpClients, UDPBoxUtility.DefaultHead);
             mUDPBoxConnect.Start();

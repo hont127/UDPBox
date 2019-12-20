@@ -31,6 +31,11 @@ namespace Hont.UDPBoxExtensions
         Queue<Action> mLateUpdateActionQueue;
 
 
+        public static void InitializationInUnityGameThread()
+        {
+            UDPBox_GameThreadMediator.Instance.GetHashCode();
+        }
+
         public void EnqueueToUpdateQueue(Action content)
         {
             mActionQueue.Enqueue(content);

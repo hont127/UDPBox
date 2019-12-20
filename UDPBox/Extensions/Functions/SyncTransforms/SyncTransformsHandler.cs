@@ -26,7 +26,10 @@ namespace Hont.UDPBoxExtensions
 
         public override void Process(UDPBox udpBox, byte[] packageBytes, IPEndPoint ipEndPoint)
         {
+            UnityEngine.Debug.Log(" Sync Trans mTemplate1");
             mTemplate.Deserialize(packageBytes);
+
+            UnityEngine.Debug.Log(" Sync Trans mTemplate.Op);: " + mTemplate.Op);
 
             switch (mTemplate.Op)
             {

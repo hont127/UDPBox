@@ -9,7 +9,7 @@ namespace Hont.UDPBoxPackage
     public static class UDPBoxUtility
     {
         public const short BROADCAST_PACKAGE_ID = -1;
-        public const short ESTABLISH_SERVER_CONNECT_ID = -2;
+        public const short ESTABLISH_CONNECT_ID = -2;
         public const short PING_PONG_ID = -3;
         public const short ACK_ID = -4;
 
@@ -173,31 +173,6 @@ namespace Hont.UDPBoxPackage
                 return true;
 
             return false;
-        }
-
-        public static UDPBOX_UDPClient GeterateUdpClient(int port)
-        {
-            var mUdpClient = new UDPBOX_UDPClient(port);
-            mUdpClient.Client.SendTimeout = 1000;
-            mUdpClient.Client.ReceiveTimeout = 10000;
-
-            uint IOC_IN = 0x80000000;
-            uint IOC_VENDOR = 0x18000000;
-            uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
-            mUdpClient.Client.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
-            //屏蔽目标机器没有接收逻辑时报错。
-
-            return mUdpClient;
-        }
-
-        public static UDPBOX_UDPClient[] GeterateUdpClientsArray(int beginPort, int endPort)
-        {
-            var result = new UDPBOX_UDPClient[endPort - beginPort];
-
-            for (int i = 0; i < result.Length; i++)
-                result[i] = GeterateUdpClient(beginPort + i);
-
-            return result;
         }
     }
 }

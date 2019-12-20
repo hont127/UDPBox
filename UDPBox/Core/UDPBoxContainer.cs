@@ -47,15 +47,16 @@ namespace Hont.UDPBoxPackage
 
         public enum EState { NoStart, NoClients, HasClients, NoServer, HasServer, Released }
 
-        UDPBOX_UDPClient mBroadcastUdpClient;
+        UDPBox_UDPClient mBroadcastUdpClient;
         UDPBoxBroadcast mUDPBoxBroadcast;
 
         long mLastWorkThreadTime;
         float mPingTargetThreadTimer;
 
-        BroadcastPackage mBroadcastPackageTemplate;
+        bool mUseInternalBroadcastLogic;
+
+        EstablishConnectPackage mEstablishConnectPackage;
         PingPongPackage mPingPongPackageTemplate;
-        EstablishServerConnectPackage mEstablishServerConnectPackage;
 
         Random mRandom;
 
@@ -64,7 +65,6 @@ namespace Hont.UDPBoxPackage
         public ConnectInfo MasterIPConnectInfo { get; private set; }
         public List<ConnectInfo> ClientIPConnectList { get; private set; } = new List<ConnectInfo>(MAX_CLIENT);
 
-        public string Proj_Prefix { get; set; } = "Demo";
         public bool IsMaster { get; private set; }
 
         public int BroadcastListenPort { get; set; } = 1234;
@@ -86,7 +86,7 @@ namespace Hont.UDPBoxPackage
         public byte[] PackageHeadBytes { get { return UDPBox.PackageHeadBytes; } }
 
         public event Action OnConnectedMaster;
-        public event Action<IPEndPoint> OnConnectedClient;
+        public event Action OnConnectedClient;
 
         public event Action OnMasterIPTimeOut;
         public event Action<IPEndPoint> OnClientTimeOut;
@@ -105,72 +105,37 @@ namespace Hont.UDPBoxPackage
             UDPBox = new UDPBox();
         }
 
-        public void Initialization(string packageHead)
+        public void Initialization(string packageHead, bool useInternalBroadcastLogic)
         {
-            var udpClientArray = new UDPBOX_UDPClient[UdpBoxEndPort - UdpBoxBeginPort];
-            for (int i = 0, port = UdpBoxBeginPort; port < UdpBoxEndPort; i++, port++)
-            {
-                udpClientArray[i] = UDPBoxUtility.GeterateUdpClient(port);
-            }
+            mUseInternalBroadcastLogic = useInternalBroadcastLogic;
 
+            var udpClientArray = new UDPBox_UDPClient[UdpBoxEndPort - UdpBoxBeginPort];
+            for (int i = 0, port = UdpBoxBeginPort; port < UdpBoxEndPort; i++, port++)
+                udpClientArray[i] = UDPBoxFactory.GeterateUdpClient(port);
             UDPBox.Initialization(udpClientArray, packageHead);
 
-            mBroadcastPackageTemplate = new BroadcastPackage(PackageHeadBytes);
+            mEstablishConnectPackage = new EstablishConnectPackage(PackageHeadBytes);
             mPingPongPackageTemplate = new PingPongPackage(PackageHeadBytes);
-            mEstablishServerConnectPackage = new EstablishServerConnectPackage(PackageHeadBytes);
             SelfIPAddress = SelfIPAddress ?? UDPBoxUtility.GetSelfIP(BroadcastNetPrefixIP);
+        }
+
+        public void RestartUDPBoxContainer(string packageHead, bool useInternalBroadcastLogic, bool isMaster)
+        {
+            if (State != EState.NoStart)
+                Release();
+
+            Initialization(packageHead, useInternalBroadcastLogic);
+            Start(isMaster);
         }
 
         public void Start(bool isMaster)
         {
             IsMaster = isMaster;
 
-            mBroadcastUdpClient = UDPBoxUtility.GeterateUdpClient(BroadcastListenPort);
-            mUDPBoxBroadcast = new UDPBoxBroadcast(mBroadcastUdpClient, BroadcastSendPort);
-
-            mUDPBoxBroadcast.ListenBroadcast((bytes, endPoint) =>
+            if (mUseInternalBroadcastLogic)
             {
-                if (UDPBoxUtility.PackageIsBroken(bytes, PackageHeadBytes)) return;
-                if (!UDPBoxUtility.ComparePackageID(bytes, PackageHeadBytes, mBroadcastPackageTemplate.ID)) return;
-
-                if (!mBroadcastPackageTemplate.Deserialize(bytes)) return;
-                if (mBroadcastPackageTemplate.ProjectPrefix != Proj_Prefix) return;
-
-                var ipEndPoint = new IPEndPoint(IPAddress.Parse(mBroadcastPackageTemplate.IpAddress), mBroadcastPackageTemplate.BeginPort);
-                if (ipEndPoint.Address.Equals(SelfIPAddress)
-                    && ipEndPoint.Port < UdpBoxEndPort && ipEndPoint.Port >= UdpBoxBeginPort) return;
-                //Provoid self connect to the self.
-
-                if (isMaster)
-                {
-                    if (ClientIPConnectList.Count < MAX_CLIENT
-                        && !ClientIPConnectList.Find(m => m.IsPortAndIPContain(ipEndPoint)).Valid)
-                    {
-                        ClientIPConnectList.Add(new ConnectInfo()
-                        {
-                            IPEndPoint = ipEndPoint,
-                            BeginPort = mBroadcastPackageTemplate.BeginPort,
-                            EndPort = mBroadcastPackageTemplate.EndPort,
-                        });
-
-                        mEstablishServerConnectPackage.IpAddress = SelfIPAddress.ToString();
-                        mEstablishServerConnectPackage.BeginPort = UdpBoxBeginPort;
-                        mEstablishServerConnectPackage.EndPort = UdpBoxEndPort;
-                        UDPBox.SendMessage(mEstablishServerConnectPackage.Serialize(), ipEndPoint);
-
-                        OnConnectedClient?.Invoke(ipEndPoint);
-                    }
-                }
-            });
-
-            if (!IsMaster)
-            {
-                mBroadcastPackageTemplate.ProjectPrefix = Proj_Prefix;
-                mBroadcastPackageTemplate.IpAddress = SelfIPAddress.ToString();
-                mBroadcastPackageTemplate.BeginPort = UdpBoxBeginPort;
-                mBroadcastPackageTemplate.EndPort = UdpBoxEndPort;
-
-                mUDPBoxBroadcast.StartBroadcast(mBroadcastPackageTemplate.Serialize(), BroadcastNetPrefixIP);
+                mBroadcastUdpClient = UDPBoxFactory.GeterateUdpClient(BroadcastListenPort);
+                mUDPBoxBroadcast = UDPBoxFactory.GenerateStandardUDPBoxBroadcastAndSetup(mBroadcastUdpClient, BroadcastSendPort, BroadcastNetPrefixIP, this);
             }
 
             UDPBox.RegistMessageIntercept(InterceptAndUpdateConnectState);
@@ -181,11 +146,14 @@ namespace Hont.UDPBoxPackage
         public void Release()
         {
             State = EState.Released;
-            mBroadcastUdpClient.Close();
-            mBroadcastUdpClient.Dispose();
+            if (mUseInternalBroadcastLogic)
+            {
+                mBroadcastUdpClient.Close();
+                mBroadcastUdpClient.Dispose();
+                mUDPBoxBroadcast?.ReleaseThread();
+            }
             UDPBox.UnregistMessageIntercept(InterceptAndUpdateConnectState);
             UDPBox.UnregistWorkThreadOperate(RefreshConnectStateInWorkThread);
-            mUDPBoxBroadcast?.ReleaseThread();
             UDPBox.Dispose();
         }
 
@@ -194,10 +162,23 @@ namespace Hont.UDPBoxPackage
             UDPBox.SetLogger(logger);
         }
 
-        public void SendUDPMessageWithRandomPort(byte[] bytes, ConnectInfo connectInfo)
+        public void SendUDPMessageToRandomPort(byte[] bytes, ConnectInfo connectInfo)
         {
             UpdateConnectInfoToRandomPort(connectInfo);
             SendUDPMessage(bytes, connectInfo.IPEndPoint);
+        }
+
+        public void SendUDPMessageToRandomPort(byte[] bytes, int beginPort, int endPort, IPAddress address)
+        {
+            var port = mRandom.Next(beginPort, endPort);
+            var ipEndPoint = new IPEndPoint(address, port);
+            SendUDPMessage(bytes, ipEndPoint);
+        }
+
+        public void SendUDPMessageToRandomPort(byte[] bytes, int beginPort, int endPort, IPEndPoint endPoint)
+        {
+            endPoint.Port = mRandom.Next(beginPort, endPort);
+            SendUDPMessage(bytes, endPoint);
         }
 
         public void SendUDPMessage(byte[] bytes, IPEndPoint ipEndPoint)
@@ -299,13 +280,12 @@ namespace Hont.UDPBoxPackage
                     if (!item.IsClientEstablished && item.AliveTimer > TIME_OUT_NOT_ESTABLISH_CONNECT_FLOAT)
                     {
                         ClientIPConnectList.RemoveAt(i);
-                        continue;
                     }
-
-                    if (item.AliveTimer <= TIME_OUT_CONNECT_FLOAT) continue;
-
-                    ClientIPConnectList.RemoveAt(i);
-                    OnClientTimeOut?.Invoke(item.IPEndPoint);
+                    else if (item.AliveTimer > TIME_OUT_CONNECT_FLOAT)
+                    {
+                        ClientIPConnectList.RemoveAt(i);
+                        OnClientTimeOut?.Invoke(item.IPEndPoint);
+                    }
                 }
             }
             else
@@ -332,7 +312,7 @@ namespace Hont.UDPBoxPackage
                         var item = ClientIPConnectList[i];
                         if (item.Valid && item.IsClientEstablished)
                         {
-                            SendUDPMessageWithRandomPort(mPingPongPackageTemplate.Serialize(), item);
+                            SendUDPMessageToRandomPort(mPingPongPackageTemplate.Serialize(), item);
                         }
                     }
                 }
@@ -340,7 +320,7 @@ namespace Hont.UDPBoxPackage
                 {
                     if (MasterIPConnectInfo.Valid)
                     {
-                        SendUDPMessageWithRandomPort(mPingPongPackageTemplate.Serialize(), MasterIPConnectInfo);
+                        SendUDPMessageToRandomPort(mPingPongPackageTemplate.Serialize(), MasterIPConnectInfo);
                     }
                 }
 
@@ -360,23 +340,61 @@ namespace Hont.UDPBoxPackage
 
             var packageID = UDPBoxUtility.GetPackageID(messageInterceptInfo.Bytes, PackageHeadBytes);
 
-            if (packageID == UDPBoxUtility.ESTABLISH_SERVER_CONNECT_ID)
+            if (packageID == UDPBoxUtility.ESTABLISH_CONNECT_ID)
             {
-                if (!mEstablishServerConnectPackage.Deserialize(messageInterceptInfo.Bytes)) return true;
+                if (!mEstablishConnectPackage.Deserialize(messageInterceptInfo.Bytes)) return true;
 
-                var establishIPAddress = mEstablishServerConnectPackage.IpAddress;
-                var serverBeginPort = mEstablishServerConnectPackage.BeginPort;
-                var serverEndPort = mEstablishServerConnectPackage.EndPort;
+                var senderType = mEstablishConnectPackage.SenderType;
+                var establishIPAddress = mEstablishConnectPackage.IpAddress;
+                var packageBeginPort = mEstablishConnectPackage.BeginPort;
+                var packageEndPort = mEstablishConnectPackage.EndPort;
+                var isReceipt = mEstablishConnectPackage.IsReceipt;
 
-                if (!IsMaster)
+                if (senderType == EstablishConnectPackage.ESenderType.Server)
                 {
                     MasterIPConnectInfo = new ConnectInfo()
                     {
-                        IPEndPoint = new IPEndPoint(IPAddress.Parse(establishIPAddress), serverBeginPort),
-                        BeginPort = serverBeginPort,
-                        EndPort = serverEndPort,
+                        IPEndPoint = new IPEndPoint(IPAddress.Parse(establishIPAddress), packageBeginPort),
+                        BeginPort = packageBeginPort,
+                        EndPort = packageEndPort,
                     };
                     OnConnectedMaster?.Invoke();
+
+                    if (!isReceipt)
+                    {
+                        mEstablishConnectPackage.SenderType = EstablishConnectPackage.ESenderType.Client;
+                        mEstablishConnectPackage.IpAddress = SelfIPAddress.ToString();
+                        mEstablishConnectPackage.BeginPort = UdpBoxBeginPort;
+                        mEstablishConnectPackage.EndPort = UdpBoxEndPort;
+                        mEstablishConnectPackage.IsReceipt = true;
+                        SendUDPMessageToRandomPort(mEstablishConnectPackage.Serialize(), packageBeginPort, packageEndPort, IPAddress.Parse(establishIPAddress));
+                    }
+                }
+                else if (senderType == EstablishConnectPackage.ESenderType.Client)
+                {
+                    var connectInfo = new ConnectInfo()
+                    {
+                        IPEndPoint = new IPEndPoint(IPAddress.Parse(establishIPAddress), packageBeginPort),
+                        BeginPort = packageBeginPort,
+                        EndPort = packageEndPort,
+                    };
+
+                    if (ClientIPConnectList.Count < MAX_CLIENT
+                        && !ClientIPConnectList.Find(m => m.IsPortAndIPContain(connectInfo.IPEndPoint)).Valid)
+                    {
+                        ClientIPConnectList.Add(connectInfo);
+                        OnConnectedClient?.Invoke();
+                    }
+
+                    if (!isReceipt)
+                    {
+                        mEstablishConnectPackage.SenderType = EstablishConnectPackage.ESenderType.Server;
+                        mEstablishConnectPackage.IpAddress = SelfIPAddress.ToString();
+                        mEstablishConnectPackage.BeginPort = UdpBoxBeginPort;
+                        mEstablishConnectPackage.EndPort = UdpBoxEndPort;
+                        mEstablishConnectPackage.IsReceipt = true;
+                        SendUDPMessageToRandomPort(mEstablishConnectPackage.Serialize(), packageBeginPort, packageEndPort, IPAddress.Parse(establishIPAddress));
+                    }
                 }
             }
             else if (packageID == UDPBoxUtility.PING_PONG_ID)

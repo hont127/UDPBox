@@ -268,9 +268,10 @@ MonoBehaviour:
   udpBoxBeginPort: 1240
   udpBoxEndPort: 1250
   broadcastNetprefixIP: 192.168.1.
-  proj_prefix: Demo
+  packageHeadString: Demo
   sendMsgThreadSleepTime_MS: 35
-  recvMsgThreadSleepTime_MS: 32
+  useInternalBroadcastLogic: 1
+  enableLog: 0
 --- !u!4 &893708869
 Transform:
   m_ObjectHideFlags: 0
@@ -338,7 +339,6 @@ GameObject:
   m_Component:
   - component: {fileID: 995071312}
   - component: {fileID: 995071311}
-  - component: {fileID: 995071313}
   m_Layer: 0
   m_Name: UDPBOX2
   m_TagString: Untagged
@@ -358,15 +358,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMaster: 0
-  isDebug: 1
+  isDebug: 0
   broadcastSendPort: 1235
   broadcastListenPort: 1234
   udpBoxBeginPort: 1250
   udpBoxEndPort: 1260
   broadcastNetprefixIP: 192.168.1.
-  proj_prefix: Demo
+  packageHeadString: Demo
   sendMsgThreadSleepTime_MS: 35
-  recvMsgThreadSleepTime_MS: 32
+  useInternalBroadcastLogic: 1
+  enableLog: 0
 --- !u!4 &995071312
 Transform:
   m_ObjectHideFlags: 0
@@ -381,19 +382,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &995071313
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 995071310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bdb701b6b1641240af6252452902303, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  udpBoxContainer: {fileID: 995071311}
-  isDebug: 1
 --- !u!1 &1532876613
 GameObject:
   m_ObjectHideFlags: 0
