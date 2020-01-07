@@ -142,7 +142,7 @@ namespace Hont.UDPBoxExtensions
 
         void OnEnable()
         {
-            mUDPBoxContainer = UDPBoxFactory.GenerateUDPBoxContainerInUnityGameThread(true, useInternalBroadcastLogic);
+            mUDPBoxContainer = UDPBoxFactory.GenerateUDPBoxContainerInUnityGameThread(true, enableLog);
 
             if (GetComponent<UDPBoxMasterSearcher>() == null)
                 RestartUDPBoxContainer();

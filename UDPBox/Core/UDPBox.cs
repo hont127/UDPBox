@@ -81,13 +81,15 @@ namespace Hont.UDPBoxPackage
             : this()
         {
             Initialization(udpClientsArray, packageHead);
-            RegistHandler(new PingPongHandler(mPackageHeadBytes));
         }
 
         public void Initialization(UDPBox_UDPClient[] udpClientsArray, string packageHead)
         {
             mUdpClientsList = new List<UDPBox_UDPClient>(udpClientsArray);
             mPackageHeadBytes = UDPBoxUtility.ToBuffer(packageHead);
+
+            RegistHandler(new PingPongHandler(mPackageHeadBytes));
+            RegistHandler(new LargePackageHandler(mPackageHeadBytes));
         }
 
         public void Start()
@@ -97,7 +99,6 @@ namespace Hont.UDPBoxPackage
             for (int i = 0, iMax = mUdpClientsList.Count; i < iMax; i++)
             {
                 var udpClient = mUdpClientsList[i];
-
                 udpClient.BeginReceive(ReceiveMessageCallback, udpClient);
             }
 
@@ -176,6 +177,58 @@ namespace Hont.UDPBoxPackage
                 });
             }
             OnSendMessage?.Invoke(bytes, endPoint);
+        }
+
+        public void ProcessPackage(byte[] bytes, IPEndPoint ipEndPoint)
+        {
+            Logger.Log("Process Package Begin: " + bytes.Length + " ipEndPoint: " + ipEndPoint, EUDPBoxLogType.Log);
+
+            if (StatisticsTotalPackageCount == uint.MaxValue)
+            {
+                StatisticsBadPackageCount = 0;
+                StatisticsTotalPackageCount = 0;
+            }
+
+            StatisticsTotalPackageCount++;
+
+            if (UDPBoxUtility.PackageIsBroken(bytes, mPackageHeadBytes))
+            {
+                StatisticsBadPackageCount++;
+                Logger.Log("Package Is Broken!", EUDPBoxLogType.Warning);
+
+                return;
+            }
+
+            var flag = false;
+            for (int i = 0, iMax = mMessageInterceptList.Count; i < iMax; i++)
+            {
+                var item = mMessageInterceptList[i];
+                flag = item(new MessageInterceptInfo() { Bytes = bytes, IPEndPoint = ipEndPoint });
+                if (flag)
+                {
+                    Logger.Log("Message Intercepted: " + item + " bytes: " + bytes.Length + " ipEndPoint: " + ipEndPoint, EUDPBoxLogType.Log);
+                }
+            }
+            if (flag) return;
+
+            var targetHandler = default(HandlerBase);
+            for (int i = 0, iMax = mHandlerList.Count; i < iMax; i++)
+            {
+                var item = mHandlerList[i];
+
+                var id = UDPBoxUtility.GetPackageID(bytes, mPackageHeadBytes);
+
+                if (UDPBoxUtility.ComparePackageID(bytes, mPackageHeadBytes, item.ProcessableID))
+                {
+                    targetHandler = item;
+                    break;
+                }
+            }
+
+            Logger.Log("Process Package: " + targetHandler, EUDPBoxLogType.Log);
+
+            if (targetHandler != null)
+                targetHandler.Process(this, bytes, ipEndPoint);
         }
 
         public void Dispose()
@@ -311,53 +364,6 @@ namespace Hont.UDPBoxPackage
             {
                 OnException?.Invoke(e);
             }
-        }
-
-        void ProcessPackage(byte[] bytes, IPEndPoint ipEndPoint)
-        {
-            if (StatisticsTotalPackageCount == uint.MaxValue)
-            {
-                StatisticsBadPackageCount = 0;
-                StatisticsTotalPackageCount = 0;
-            }
-
-            StatisticsTotalPackageCount++;
-
-            if (UDPBoxUtility.PackageIsBroken(bytes, mPackageHeadBytes))
-            {
-                StatisticsBadPackageCount++;
-                Logger.Log("Package Is Broken!", EUDPBoxLogType.Warning);
-
-                return;
-            }
-
-            var flag = false;
-            for (int i = 0, iMax = mMessageInterceptList.Count; i < iMax; i++)
-            {
-                var item = mMessageInterceptList[i];
-                flag = item(new MessageInterceptInfo() { Bytes = bytes, IPEndPoint = ipEndPoint });
-                if (flag)
-                {
-                    Logger.Log("Message Intercepted: " + item + " bytes: " + bytes.Length + " ipEndPoint: " + ipEndPoint, EUDPBoxLogType.Log);
-                }
-            }
-            if (flag) return;
-
-            var targetHandler = default(HandlerBase);
-            for (int i = 0, iMax = mHandlerList.Count; i < iMax; i++)
-            {
-                var item = mHandlerList[i];
-                if (UDPBoxUtility.ComparePackageID(bytes, mPackageHeadBytes, item.ProcessableID))
-                {
-                    targetHandler = item;
-                    break;
-                }
-            }
-
-            Logger.Log("Process Package: " + targetHandler, EUDPBoxLogType.Log);
-
-            if (targetHandler != null)
-                targetHandler.Process(this, bytes, ipEndPoint);
         }
     }
 }

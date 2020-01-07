@@ -122,7 +122,7 @@ namespace Hont.UDPBoxPackage
             Client.ReceiveBufferSize = mBufferCacheLength;
         }
 
-        public UDPBox_UDPClient(int port) : this(port, 1024, AddressFamily.InterNetwork)
+        public UDPBox_UDPClient(int port) : this(port, 65536, AddressFamily.InterNetwork)
         {
         }
 

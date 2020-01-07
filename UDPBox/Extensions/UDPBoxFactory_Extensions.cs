@@ -23,9 +23,7 @@ namespace Hont.UDPBoxPackage
             }
 
             if (setHardDiskLogger)
-            {
-                container.SetLogger(new HardDiskUDPBoxLogger());
-            }
+                container.SetLogger(HardDiskUDPBoxLogger.Instance);
 
             return container;
         }

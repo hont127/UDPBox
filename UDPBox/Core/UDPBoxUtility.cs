@@ -3,6 +3,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Hont.UDPBoxPackage
 {
@@ -12,6 +13,7 @@ namespace Hont.UDPBoxPackage
         public const short ESTABLISH_CONNECT_ID = -2;
         public const short PING_PONG_ID = -3;
         public const short ACK_ID = -4;
+        public const short LARGE_PACKAGE_ID = -5;
 
         static byte[] mCache4BytesArray;
         static byte[] mCache2BytesArray;
@@ -33,6 +35,56 @@ namespace Hont.UDPBoxPackage
             var pattrn = @"(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])";
             if (System.Text.RegularExpressions.Regex.IsMatch(ip, pattrn)) return true;
             else return false;
+        }
+
+        public static long GetUUID()
+        {
+            var buffer = Guid.NewGuid().ToByteArray();
+            return BitConverter.ToInt64(buffer, 0);
+        }
+
+        public static byte[][] ConvertToLargePackageBytes(Package package, int segmentByteLength)
+        {
+            var packageID = package.ID;
+            var packageUUID = GetUUID();
+            var bytes = package.Serialize();
+            var segmentCount = (int)Math.Ceiling(bytes.Length / (double)segmentByteLength);
+            var wait_return_bytes = new List<byte[]>();
+
+            for (int i = 0; i < segmentCount; i++)
+            {
+                var currentSegment_b = (i + 1) * segmentByteLength;
+
+                if (bytes.Length < currentSegment_b)
+                {
+                    var currentSegment_a = i * segmentByteLength;
+                    var sub_bytes = new byte[bytes.Length - currentSegment_a];
+                    Array.Copy(bytes, i * segmentByteLength, sub_bytes, 0, sub_bytes.Length);
+
+                    var largePackage = new LargePackage(package.HeadBytes);
+                    largePackage.ConcretePackageID = packageID;
+                    largePackage.ConcretePackageUUID = packageUUID;
+                    largePackage.SegmentID = segmentCount - 1;
+                    largePackage.SegmentTotalCount = segmentCount;
+                    largePackage.BytesList = new List<byte>(sub_bytes);
+                    wait_return_bytes.Add(largePackage.Serialize());
+                }
+                else
+                {
+                    var sub_bytes = new byte[segmentByteLength];
+                    Array.Copy(bytes, i * segmentByteLength, sub_bytes, 0, sub_bytes.Length);
+
+                    var largePackage = new LargePackage(package.HeadBytes);
+                    largePackage.ConcretePackageID = packageID;
+                    largePackage.ConcretePackageUUID = packageUUID;
+                    largePackage.SegmentID = i;
+                    largePackage.SegmentTotalCount = segmentCount;
+                    largePackage.BytesList = new List<byte>(sub_bytes);
+                    wait_return_bytes.Add(largePackage.Serialize());
+                }
+            }
+
+            return wait_return_bytes.ToArray();
         }
 
         public static IPAddress GetSelfIP(string ipBroadcastPrefix = "192.168.1.")
