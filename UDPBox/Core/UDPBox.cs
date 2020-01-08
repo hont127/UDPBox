@@ -216,8 +216,6 @@ namespace Hont.UDPBoxPackage
             {
                 var item = mHandlerList[i];
 
-                var id = UDPBoxUtility.GetPackageID(bytes, mPackageHeadBytes);
-
                 if (UDPBoxUtility.ComparePackageID(bytes, mPackageHeadBytes, item.ProcessableID))
                 {
                     targetHandler = item;
