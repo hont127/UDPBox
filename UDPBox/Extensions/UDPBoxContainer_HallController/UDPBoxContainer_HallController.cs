@@ -56,6 +56,7 @@ namespace Hont.UDPBoxExtensions
         public List<RoomInfo> RoomInfoList { get { return mRoomInfoList; } }
         public string RoomName { get { return mRoomName; } }
         public EState State { get { return mCurrentState; } }
+        public string BroadcastNetPrefixIP { get; set; } = "192.168.1.";
 
         public event Action OnUdpBoxContainerInitialization;
         public event Action OnUdpBoxContainerRelease;
@@ -72,7 +73,7 @@ namespace Hont.UDPBoxExtensions
 
             mBroadcast.ReleaseThread();
             mBroadcast.ResetState();
-            mBroadcast.StartBroadcast(mHallPackage.Serialize());
+            mBroadcast.StartBroadcast(mHallPackage.Serialize(), BroadcastNetPrefixIP);
 
             ToRoomHostMode();
         }
@@ -109,6 +110,14 @@ namespace Hont.UDPBoxExtensions
             ToHallWaitMode();
         }
 
+        public void Release()
+        {
+            mUdpClient?.Dispose();
+            mBroadcast?.ReleaseThread();
+            mContainer?.Release();
+            OnUdpBoxContainerRelease?.Invoke();
+        }
+
         void Awake()
         {
             mRoomInfoList = new List<RoomInfo>(32);
@@ -143,10 +152,7 @@ namespace Hont.UDPBoxExtensions
 
         void OnDestroy()
         {
-            mUdpClient.Dispose();
-            mBroadcast.ReleaseThread();
-            mContainer.Release();
-            OnUdpBoxContainerRelease?.Invoke();
+            Release();
         }
 
         void ToRoomClientMode()
@@ -201,7 +207,6 @@ namespace Hont.UDPBoxExtensions
                 if (!mRoomInfoList.Contains(roomInfo))
                 {
                     mRoomInfoList.Add(roomInfo);
-                    Debug.Log("add room");
                 }
                 else
                 {
